@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+  <meta name="keywords" content="animation, DOM, renderer" />
+  <meta name="description" content="A DOM-based rendering engine." />
+  <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name='apple-mobile-web-app-capable' content='yes' />
+  <title>Torndao</title>
+  <link rel="stylesheet" href="css/flora.min.css" type="text/css" charset="utf-8" />
+  <script src="scripts/flora.min.js" type="text/javascript" charset="utf-8"></script>
+  <script src="scripts/quietriot.min.js" type="text/javascript" charset="utf-8"></script>
+  <script src="scripts/easing.js" type="text/javascript" charset="utf-8"></script>
+  <script src="scripts/soundbed.min.js" type="text/javascript" charset="utf-8"></script>
+  </head>
+  <body>
+    <div id='worldA'></div>
+    <div id='worldAMask'></div>
+    <script type="text/javascript" charset="utf-8">
+
+      Flora.System.setup(function() {
+        var world = this.add('World', {
+          el: document.getElementById('worldA'),
+          color: [40, 40, 40],
+          width: 800,
+          height: 600,
+          borderWidth: 0,
+          gravity: new Flora.Vector(0, 0),
+          c: 0
+        });
+
+        var color = Flora.Utils.getRandomNumber(100, 200);
+
+        // reference for a single Perlin noise pattern for the entire funnel
+        var noise;
+
+        // BASE
+        var base = this.add('Oscillator', {
+          isPerlin: true,
+          perlinSpeed: 0.0001,
+          perlinTime: 100,
+          initialLocation: new Flora.Vector(world.width / 2, world.height),
+          amplitude: new Flora.Vector(world.width / 4, 0),
+          acceleration: new Flora.Vector(),
+          aVelocity: new Flora.Vector(),
+          opacity: 0,
+          life: 1,
+          afterStep: function() {
+
+            this.life += 1;
+
+            // increment the shared noise pattern
+            noise = SimplexNoise.noise(this.perlinTime, 0);
+
+            if (!(this.life % 3)) { // use life to throttle particle system
+
+              var accel = new Flora.Vector(1, 1);
+              accel.normalize();
+              accel.mult(Flora.Utils.getRandomNumber(0.01, 0.1, true));
+              accel.rotate(Flora.Utils.degreesToRadians(Flora.Utils.getRandomNumber(150, 300)));
+
+              var size = Flora.Utils.getRandomNumber(1, 3, true);
+
+              Flora.System.add('Particle', {
+                location: new Flora.Vector(this.location.x, this.location.y),
+                acceleration: accel,
+                width: 0,
+                height: 0,
+                borderWidth: 0,
+                boxShadowBlur: size * 10,
+                boxShadowSpread: size * 3,
+                boxShadowColor: [color, color, color],
+                maxSpeed: Flora.Utils.getRandomNumber(1, 20, true),
+                opacity: Flora.Utils.getRandomNumber(0.1, 0.2, true),
+                lifespan: Flora.Utils.getRandomNumber(70, 120)
+              });
+            }
+          }
+        });
+
+
+        // FUNNEL
+        var JOINT_DETAIL = 25; // higher value = less joints
+        var FUNNEL_MIN_WIDTH = 5;
+
+        for (var i = 0, max = Math.floor(world.height / JOINT_DETAIL); i < max; i++) {
+
+          var ease = Math.easeInCirc(i, 0, 1, max - 1);
+
+          // funnel joints
+          var agent = this.add('Mover', {
+            parent: base,
+            offsetDistance: ease * world.height,
+            offsetAngle: 270,
+            opacity: 0,
+            afterStep: function() {
+              // use shared noise to move the parent node around the y-axis
+              var offset = this.index * this.offsetFromCenter * noise;
+              this.location.x = this.location.x + (offset);
+            }
+          });
+          agent.index = i;
+
+          // funnel body
+          var easeFunnelShape = Math.easeInExpo(i, 0, 1, max - 1);
+
+          // use Perlin noise to generate the parent node's offset from the funnel's y-axis
+          // use easing so the effect is amplified
+          agent.offsetFromCenter = Math.easeInSine(i, 0, 1, max - 1) *
+              SimplexNoise.noise(i * 0.1, 0) * 20;
+
+          var colorNoise = Math.floor(Flora.Utils.map(SimplexNoise.noise(i * 0.05, 0),
+              -1, 1, 50, 255));
+
+          this.add('Oscillator', {
+            parent: agent,
+            width: 0,
+            height: 0,
+            boxShadowBlur: (easeFunnelShape * 250) + FUNNEL_MIN_WIDTH, // 400
+            boxShadowSpread: (easeFunnelShape * 250) + FUNNEL_MIN_WIDTH, // 300
+            boxShadowColor: [colorNoise, colorNoise, colorNoise],
+            isPerlin: false,
+            perlinSpeed: 0.001,
+            initialLocation: new Flora.Vector(world.width / 2, world.height),
+            amplitude: new Flora.Vector((1 - easeFunnelShape) * 1, 0), // TODO: try exp ease here
+            acceleration: new Flora.Vector(1 / (i + 1), 0)
+          });
+        }
+
+        // MASKS
+        var maskWidth = (document.body.scrollWidth - world.width) / 2,
+            maskHeight = (document.body.scrollHeight - world.height) / 2;
+
+        this.add('Mover', { // top
+          isStatic: true,
+          location: new Flora.Vector(world.width/2, -1 - maskHeight / 2),
+          width: world.width + 10,
+          height: maskHeight,
+          borderRadius: 0,
+          borderWidth: 0,
+          zIndex: 100,
+          color: [20, 20, 20]
+        });
+
+        this.add('Mover', { // bottom
+          isStatic: true,
+          location: new Flora.Vector(world.width/2, world.height + 1 + maskHeight / 2),
+          width: world.width + 10,
+          height: maskHeight,
+          borderRadius: 0,
+          borderWidth: 0,
+          zIndex: 100,
+          color: [20, 20, 20]
+        });
+
+       this.add('Mover', { // left
+          isStatic: true,
+          location: new Flora.Vector(-1 - maskWidth / 2, world.height / 2),
+          width: maskWidth,
+          height: document.body.scrollHeight,
+          borderRadius: 0,
+          borderWidth: 0,
+          zIndex: 100,
+          color: [20, 20, 20]
+        });
+
+       this.add('Mover', { // right
+          isStatic: true,
+          location: new Flora.Vector(world.width + 1 + maskWidth / 2, world.height / 2),
+          width: maskWidth,
+          height: document.body.scrollHeight,
+          borderRadius: 0,
+          borderWidth: 0,
+          zIndex: 100,
+          color: [20, 20, 20]
+        });
+      });
+      Flora.System.loop();
+
+      var playerLow = new SoundBed.Player();
+      playerLow.init({
+        perlin: true,
+        reverb: 5,
+        oscAFreq: 60,
+        oscBFreq: 120,
+        oscARate: 0.1,
+        oscBRate: 0.12,
+        freqMin: 60,
+        freqMax: 120,
+        volumeMin: 0.5,
+        volumeMax: 1
+      });
+    </script>
+  </body>
+</html>
