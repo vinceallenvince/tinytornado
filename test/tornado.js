@@ -1,11 +1,8 @@
 var test = require('tape'),
-    Context,
-    Tornado, obj;
+    TinyTornado, obj;
 
-test('load Tornado.', function(t) {
-  t.throws(function() {
-    Tornado = require('../src/tornado.js');
-  }, 'throws error from Soundbed.');
-  //t.ok(Tornado, 'object loaded');
+test('load TinyTornado.', function(t) {
+  TinyTornado = require('../src/tinytornado.js');
+  t.ok(TinyTornado, 'object loaded');
   t.end();
 });
