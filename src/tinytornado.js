@@ -6,14 +6,47 @@ var Utils = require('drawing-utils-lib');
 var Vector = require('vector2d-lib');
 var SimplexNoise = require('quietriot');
 
-var FUNNEL_MIN_WIDTH = 5;
-
+/**
+ * Creates a new TinyTornado.
+ * @constructor
+ */
 function TinyTornado() {
-  this.name = 'TinyTornado';
+
 }
 
+/**
+ * Minium width of the funnel base.
+ * @type {Number}
+ * @memberof TinyTornado
+ */
+TinyTornado.FUNNEL_MIN_WIDTH = 5;
+
+/**
+ * Holds a Perlin noise value.
+ * @type {Number}
+ * @memberof TinyTornado
+ */
 TinyTornado.noise = 0;
 
+/**
+ * Initializes an instance of TinyTornado.
+ * @memberof TinyTornado
+ * @param {Object} [opt_world_options=] A map of initial world properties.
+ * @param {Object} [opt_world_options.el = document.body] The world's DOM object.
+ * @param {number} [opt_world_options.width = 800] The world width in pixels.
+ * @param {number} [opt_world_options.height = 600] The world height in pixels.
+ * @param {number} [opt_world_options.borderWidth = 1] The world border widthin pixels.
+ * @param {string} [opt_world_options.borderStyle = 'solid'] The world border style.
+ * @param {Object} [opt_world_options.borderColor = 0, 0, 0] The world border color.
+ * @param {Object} [opt_base_options=] A map of initial base properties.
+ * @param {boolean} [opt_base_options.perlin = true] Set to true to move the base via perlin noise.
+ * @param {number} [opt_base_options.perlinSpeed = 0.0001] The base perlin speed.
+ * @param {number} [opt_base_options.perlinTime = 100] The initial base perlin time.
+ * @param {Object} [opt_base_options.initialLocation = bottom middle of the world] The initial base location.
+ * @param {Object} [opt_base_options.amplitude = world.width / 4, 0] The limit of the base location.
+ * @param {Object} [opt_joint_options=] A map of initial joint properties.
+ * @param {number} [opt_joint_options.jointDensity = 25] The number of joints in the funnel.
+ */
 TinyTornado.prototype.init = function(opt_world_options, opt_base_options, opt_joint_options) {
 
   var world_options = opt_world_options || {},
@@ -41,7 +74,7 @@ TinyTornado.prototype.setupCallback = function(world_options, base_options, join
     borderWidth: world_options.borderWidth || 1,
     borderStyle: world_options.borderStyle || 'solid',
     borderColor: world_options.borderColor || [0, 0, 0],
-    gravity: new Vector(0, 0),
+    gravity: new Vector(),
     c: 0
   });
 
@@ -94,13 +127,12 @@ TinyTornado.prototype.setupCallback = function(world_options, base_options, join
       parent: joint,
       width: 0,
       height: 0,
-      boxShadowBlur: (easeFunnelShape * 250) + FUNNEL_MIN_WIDTH, // 400
-      boxShadowSpread: (easeFunnelShape * 250) + FUNNEL_MIN_WIDTH, // 300
+      boxShadowBlur: (easeFunnelShape * 350) + TinyTornado.FUNNEL_MIN_WIDTH, // 400
+      boxShadowSpread: (easeFunnelShape * 250) + TinyTornado.FUNNEL_MIN_WIDTH, // 300
       boxShadowColor: [colorNoise, colorNoise, colorNoise],
       perlin: false,
-      perlinSpeed: 0.001,
       initialLocation: new Vector(this.world.width / 2, this.world.height),
-      amplitude: new Vector((1 - easeFunnelShape) * 1, 0),
+      amplitude: new Vector((2 - easeFunnelShape) * 1, 0),
       acceleration: new Vector(1 / (i + 1), 0)
     });
   }
@@ -110,25 +142,25 @@ TinyTornado.prototype.setupCallback = function(world_options, base_options, join
   var maskWidth = (document.body.scrollWidth - this.world.width) / 2,
     maskHeight = (document.body.scrollHeight - this.world.height) / 2;
 
-  this.createMask({
+  this.createMask({ // top
     location: new Burner.Vector(this.world.width/2, -1 - maskHeight / 2),
     width: this.world.width + 10,
     height: maskHeight
   });
 
-  this.createMask({
+  this.createMask({ // bottom
     location: new Burner.Vector(this.world.width/2, this.world.height + 1 + maskHeight / 2),
     width: this.world.width + 10,
     height: maskHeight
   });
 
-  this.createMask({
+  this.createMask({ // left
     location: new Burner.Vector(-1 - maskWidth / 2, this.world.height / 2),
     width: maskWidth,
     height: document.body.scrollHeight
   });
 
-  this.createMask({
+  this.createMask({ // right
     location: new Burner.Vector(this.world.width + 1 + maskWidth / 2, this.world.height / 2),
     width: maskWidth,
     height: document.body.scrollHeight
