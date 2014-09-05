@@ -14,7 +14,18 @@
   <body>
     <script type="text/javascript" charset="utf-8">
 
-      var tinytornado = new TinyTornado();
+      var base = new TinyTornado.Base({
+        opacity: 0
+      });
+      var spine = new TinyTornado.Spine({
+        opacity: 0
+      });
+      var shell = new TinyTornado.Shell();
+
+      var vortex = new TinyTornado.Vortex(base, spine, shell);
+      vortex.init();
+
+      /*var tinytornado = new TinyTornado();
       tinytornado.init(null,
       {
         baseWidth: 20,
@@ -44,7 +55,7 @@
         pillowHeight: 20,
         pillowColorMin: 0,
         pillowColorMax: 0
-      });
+      });*/
 
       //tinytornado.init();
 

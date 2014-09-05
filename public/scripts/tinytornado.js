@@ -2047,6 +2047,110 @@ module.exports = Mover;
 
 
 },{"burner":2}],10:[function(_dereq_,module,exports){
+var Burner = _dereq_('burner');
+var Utils = _dereq_('drawing-utils-lib');
+var Vector = _dereq_('vector2d-lib');
+
+/**
+ * Creates a new Base.
+ *
+ * @param {Object} [opt_options=] A map of initial properties.
+ * @param {boolean} [opt_options.width = 10] Width.
+ * @param {boolean} [opt_options.height = 10] Height.
+ * @param {boolean} [opt_options.color = 0] Color.
+ * @param {boolean} [opt_options.perlin = true] Set to true to move the base via perlin noise.
+ * @param {number} [opt_options.perlinSpeed = 0.0001] Perlin speed.
+ * @param {number} [opt_options.perlinTime = 100] Initial perlin time.
+ * @param {Object} [opt_options.initialLocation = bottom middle of the world] Initial base location.
+ * @param {Object} [opt_options.amplitude = world.width / 4, 0] Limit of the base location.
+ * @param {number} [opt_options.opacity = 0] Opacity.
+ * @param {Object} [opt_base_options.particleOptions=] A map of particleOptions.
+ * @param {number} [opt_base_options.particleOptions.width = 0] Particle width.
+ * @param {number} [opt_base_options.particleOptions.height = 0] Particle height.
+ * @param {number} [opt_base_options.particleOptions.sizeMin = 1] Minimum particle size.
+ * @param {number} [opt_base_options.particleOptions.sizeMax = 3] Maximum particle size.
+ * @param {number} [opt_base_options.particleOptions.speedMin = 1] Minimum particle speed.
+ * @param {number} [opt_base_options.particleOptions.speedMax = 20] Maximum particle speed.
+ * @param {number} [opt_base_options.particleOptions.opacityMin = 0.1] Minimum opacity.
+ * @param {number} [opt_base_options.particleOptions.opacityMax = 0.2] Maximum opacity.
+ * @param {number} [opt_base_options.particleOptions.colorMin = 100] Minimum color. Valid values bw 0 - 255.
+ * @param {number} [opt_base_options.particleOptions.colorMax = 200] Maximum color. Valid values bw 0 - 255.
+ */
+function Base(opt_options) {
+
+  var options = opt_options || {};
+
+  this.width = typeof options.width !== 'undefined' ? options.width : 10;
+  this.height = typeof options.height !== 'undefined' ? options.height : 10;
+  this.color = typeof options.color !== 'undefined' ? options.color : 0;
+  this.perlin = typeof options.perlin !== 'undefined' ? options.perlin : true;
+  this.perlinSpeed = options.perlinSpeed || 0.0001;
+  this.perlinTime = options.perlinTime || 100;
+  this.initialLocation = options.initialLocation || null;
+  this.amplitude = options.amplitude || null;
+  this.opacity = options.opacity || 0;
+  this.particleOptions = options.particleOptions || {};
+}
+
+Base.prototype.configure = function(world) {
+  this.initialLocation = new Vector(world.width / 2, world.height);
+  this.amplitude = new Vector(world.width / 4, 0);
+};
+
+/*Base.prototype._baseAfterStep = function() {
+
+  var options = this.particleOptions;
+
+  // use life to throttle particle system
+  if ((Burner.System.clock % 3) === 0) {
+
+    var accel = new Vector(1, 1);
+    accel.normalize();
+    accel.mult(Utils.getRandomNumber(0.01, 0.1, true));
+    accel.rotate(Utils.degreesToRadians(Utils.getRandomNumber(150, 300)));
+
+    var width = options.width || 0;
+    var height = options.height || 0;
+
+    var sizeMin = typeof options.sizeMin !== 'undefined' ? options.sizeMin : 1;
+    var sizeMax = typeof options.sizeMax !== 'undefined' ? options.sizeMax : 3;
+    var size = Utils.getRandomNumber(sizeMin, sizeMax, sizeMin || sizeMax);
+
+    var speedMin = typeof options.speedMin !== 'undefined' ? options.speedMin : 1;
+    var speedMax = typeof options.speedMax !== 'undefined' ? options.speedMax : 20;
+    var maxSpeed = Utils.getRandomNumber(speedMin, speedMax, true);
+
+    var opacityMin = typeof options.opacityMin !== 'undefined' ? options.opacityMin : 0.1;
+    var opacityMax = typeof options.opacityMax !== 'undefined' ? options.opacityMax : 0.2;
+    var opacity = Utils.getRandomNumber(opacityMin, opacityMax, true);
+
+    var lifespanMin = typeof options.lifespanMin !== 'undefined' ? options.lifespanMin : 70;
+    var lifespanMax = typeof options.lifespanMax !== 'undefined' ? options.lifespanMax : 120;
+    var lifespan = Utils.getRandomNumber(lifespanMin, lifespanMax);
+
+    var colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 100;
+    var colorMax = typeof options.colorMax !== 'undefined' ? options.colorMax : 200;
+    var color = Utils.getRandomNumber(colorMin, colorMax);
+
+    Burner.System.add('Particle', {
+      location: new Vector(this.location.x, this.location.y),
+      acceleration: accel,
+      width: width,
+      height: height,
+      color: [color, color, color],
+      borderWidth: 0,
+      boxShadowBlur: size * 10,
+      boxShadowSpread: size * 3,
+      boxShadowColor: [color, color, color],
+      maxSpeed: maxSpeed,
+      opacity: opacity,
+      lifespan: lifespan
+    });
+  }
+};*/
+
+module.exports = Base;
+},{"burner":2,"drawing-utils-lib":5,"vector2d-lib":8}],11:[function(_dereq_,module,exports){
 /**
  * Robert Penner's easing functions. http://gizma.com/easing/
  * @namespace
@@ -2351,9 +2455,17 @@ Easing.easeInOutCirc = function (t, b, c, d) {
 
 module.exports = Easing;
 
-},{}],11:[function(_dereq_,module,exports){
+},{}],12:[function(_dereq_,module,exports){
+module.exports = {
+  Base: _dereq_('./base'),
+  Spine: _dereq_('./spine'),
+  Shell: _dereq_('./shell'),
+  Vortex: _dereq_('./vortex')
+};
+
+},{"./base":10,"./shell":16,"./spine":17,"./vortex":18}],13:[function(_dereq_,module,exports){
 module.exports=_dereq_(9)
-},{"burner":2}],12:[function(_dereq_,module,exports){
+},{"burner":2}],14:[function(_dereq_,module,exports){
 var Item = _dereq_('burner').Item,
     SimplexNoise = _dereq_('quietriot'),
     System = _dereq_('burner').System,
@@ -2549,7 +2661,7 @@ Oscillator.prototype.getCSSText = function(props) {
 
 module.exports = Oscillator;
 
-},{"burner":2,"quietriot":7}],13:[function(_dereq_,module,exports){
+},{"burner":2,"quietriot":7}],15:[function(_dereq_,module,exports){
 var Item = _dereq_('burner').Item,
     Mover = _dereq_('./Mover'),
     Utils = _dereq_('burner').Utils,
@@ -2687,7 +2799,53 @@ Particle.prototype.getCSSText = function(props) {
 module.exports = Particle;
 
 
-},{"./Mover":9,"burner":2}],14:[function(_dereq_,module,exports){
+},{"./Mover":9,"burner":2}],16:[function(_dereq_,module,exports){
+/**
+ * Creates a new Shell.
+ *
+ * @param {Object} [opt_options=] A map of initial properties.
+ * @param {number} [opt_options.minWidth = 5] Minium width of the shell base.
+ * @param {number} [opt_options.opacity = 0] shell opacity.
+ * @param {number} [opt_options.blur = 350] shell blur. Recommended values bw 300 - 400.
+ * @param {number} [opt_options.spread = 250] shell spread. Recommended values bw 200 - 300.
+ * @param {string} [opt_options.easing = 'easeInExpo'] An easing function to determine shell shape along the spine. See Easing docs for possible values.
+ * @param {number} [opt_options.colorMin = 50] Minimum color. Valid values bw 0 - 255.
+ * @param {number} [opt_options.colorMax = 255] Maximum color. Valid values bw 0 - 255.
+ */
+function Shell(opt_options) {
+
+  var options = opt_options || {};
+
+  this.minWidth = typeof options.minWidth !== 'undefined' ? options.minWidth : 5;
+  this.opacity = typeof options.opacity !== 'undefined' ? options.opacity : 0.75;
+  this.blur = typeof options.blur !== 'undefined' ? options.blur : 350;
+  this.spread = typeof options.spread !== 'undefined' ? options.spread : 250;
+  this.easing = options.easing || 'easeInExpo';
+  this.colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 50;
+  this.colorMax = typeof options.colorMax !== 'undefined' ? options.colorMax : 255;
+}
+
+module.exports = Shell;
+},{}],17:[function(_dereq_,module,exports){
+/**
+ * Creates a new Spine.
+ *
+ * @param {Object} [opt_options=] A map of initial joint properties.
+ * @param {number} [opt_options.density = 25] Determines number of joints in the spine. Lower values = more joints.
+ * @param {number} [opt_options.opacity = 0] Opacity.
+ * @param {string} [opt_options.easing = 'easeInCirc'] An easing function to determine joint distribution along the spine. See Easing docs for possible values.
+ */
+function Spine(opt_options) {
+
+  var options = opt_options || {};
+
+  this.density = options.density || 25;
+  this.opacity = options.opacity || 0;
+  this.easing = options.easing || 'easeInCirc';
+}
+
+module.exports = Spine;
+},{}],18:[function(_dereq_,module,exports){
 var Burner = _dereq_('burner');
 var Mover = _dereq_('./mover');
 var Oscillator = _dereq_('./oscillator');
@@ -2697,30 +2855,21 @@ var Vector = _dereq_('vector2d-lib');
 var SimplexNoise = _dereq_('quietriot');
 var Easing = _dereq_('./easing');
 
-/**
- * Creates a new TinyTornado.
- *
- * A TinyTornado has three main components, a base,
- * a series of joints, and a series of pillows.
- *
- * Joints are parented to the base. Pillows are parented
- * to and oscillate around specific joints.
- *
- * @constructor
- */
-function TinyTornado() {
-
+function Vortex(base, spine, shell) {
+  this.base = base;
+  this.spine = spine;
+  this.shell = shell;
 }
 
 /**
  * Holds a Perlin noise value.
  * @type {Number}
- * @memberof TinyTornado
+ * @memberof Vortex
  */
-TinyTornado.noise = 0;
+Vortex.noise = 0;
 
 /**
- * Initializes an instance of TinyTornado.
+ * Initializes an instance of Vortex.
  * @param {Object} [opt_world_options=] A map of initial world properties.
  * @param {Object} [opt_world_options.el = document.body] World's DOM object.
  * @param {number} [opt_world_options.width = 800] World width in pixels.
@@ -2728,141 +2877,57 @@ TinyTornado.noise = 0;
  * @param {number} [opt_world_options.borderWidth = 1] World border widthin pixels.
  * @param {string} [opt_world_options.borderStyle = 'solid'] World border style.
  * @param {Object} [opt_world_options.borderColor = 0, 0, 0] World border color.
- * @param {Object} [opt_base_options=] A map of initial base properties.
- * @param {boolean} [opt_base_options.baseWidth = 10] Base width.
- * @param {boolean} [opt_base_options.baseHeight = 10] Base height.
- * @param {boolean} [opt_base_options.baseColor = 0] Base color.
- * @param {boolean} [opt_base_options.basePerlin = true] Set to true to move the base via perlin noise.
- * @param {number} [opt_base_options.basePerlinSpeed = 0.0001] Base perlin speed.
- * @param {number} [opt_base_options.basePerlinTime = 100] Initial base perlin time.
- * @param {Object} [opt_base_options.baseInitialLocation = bottom middle of the world] Initial base location.
- * @param {Object} [opt_base_options.baseAmplitude = world.width / 4, 0] Limit of the base location.
- * @param {number} [opt_base_options.baseOpacity = 0] Base Opacity.
- * @param {Object} [opt_base_options.particleOptions=] A map of particleOptions.
- * @param {number} [opt_base_options.particleOptions.width = 0] Particle width.
- * @param {number} [opt_base_options.particleOptions.height = 0] Particle height.
- * @param {number} [opt_base_options.particleOptions.sizeMin = 1] Minimum particle size.
- * @param {number} [opt_base_options.particleOptions.sizeMax = 3] Maximum particle size.
- * @param {number} [opt_base_options.particleOptions.speedMin = 1] Minimum particle speed.
- * @param {number} [opt_base_options.particleOptions.speedMax = 20] Maximum particle speed.
- * @param {number} [opt_base_options.particleOptions.opacityMin = 0.1] Minimum opacity.
- * @param {number} [opt_base_options.particleOptions.opacityMax = 0.2] Maximum opacity.
- * @param {number} [opt_base_options.particleOptions.colorMin = 100] Minimum color. Valid values bw 0 - 255.
- * @param {number} [opt_base_options.particleOptions.colorMax = 200] Maximum color. Valid values bw 0 - 255.
- * @param {Object} [opt_joint_options=] A map of initial joint properties.
- * @param {number} [opt_joint_options.jointDensity = 25] Determines number of joints in the funnel. Lower values = more joints.
- * @param {number} [opt_joint_options.jointOpacity = 0] Joint opacity.
- * @param {string} [opt_joint_options.jointEasing = 'easeInCirc'] An easing function to determine joint distribution along the funnel. See Easing docs for possible values.
- * @param {number} [opt_joint_options.jointWidth = 10] Joint width.
- * @param {number} [opt_joint_options.jointHeight = 10] Joint height.
- * @param {Object} [opt_pillow_options=] A map of initial pillow properties.
- * @param {number} [opt_pillow_options.funnelMinWidth = 5] Minium width of the funnel base.
- * @param {number} [opt_pillow_options.pillowWidth = 0] Pillow width.
- * @param {number} [opt_pillow_options.pillowHeight = 0] Pillow height.
- * @param {number} [opt_pillow_options.pillowOpacity = 0] Pillow opacity.
- * @param {number} [opt_pillow_options.pillowBlur = 350] Pillow blur. Recommended values bw 300 - 400.
- * @param {number} [opt_pillow_options.pillowSpread = 250] Pillow spread. Recommended values bw 200 - 300.
- * @param {string} [opt_pillow_options.pillowEasing = 'easeInExpo'] An easing function to determine pillow shape along the funnel. See Easing docs for possible values.
- * @param {number} [opt_pillow_options.pillowColorMin = 50] Minimum color. Valid values bw 0 - 255.
- * @param {number} [opt_pillow_options.pillowColorMax = 255] Maximum color. Valid values bw 0 - 255.
- * @memberof TinyTornado
+ * @memberof Vortex
  */
-TinyTornado.prototype.init = function(opt_world_options, opt_base_options, opt_joint_options, opt_pillow_options) {
+Vortex.prototype.init = function(opt_options) {
 
-  var world_options = opt_world_options || {},
-      base_options = opt_base_options || {},
-      joint_options = opt_joint_options || {},
-      pillow_options = opt_pillow_options || {};
+  var options = opt_options || {};
 
   Burner.System.Classes = {
     Mover: Mover,
     Oscillator: Oscillator,
     Particle: Particle
   };
-
-  Burner.System.setup(this._setupCallback.bind(this, world_options, base_options, joint_options, pillow_options));
+  Burner.System.setup(this._setupCallback.bind(this, options));
   Burner.System.clock = 10000; // advance the clock so we start deeper in the noise space
   Burner.System.loop(this._getNoise.bind(this));
 };
 
 /**
  * Sets up the world and items.
- * @param  {Object} world_options World options.
- * @param  {Object} base_options Base options.
- * @param  {Object} joint_options Joint options.
- * @memberof TinyTornado
+ * @param {Object} options World options.
+ * @memberof Vortex
  * @private
  */
-TinyTornado.prototype._setupCallback = function(world_options, base_options, joint_options, pillow_options) {
+Vortex.prototype._setupCallback = function(options) {
 
-  this.world = Burner.System.add('World', {
-    el: world_options.el || document.body,
-    color: world_options.color || [40, 40, 40],
-    width: world_options.width || 800,
-    height: world_options.height || 600,
-    borderWidth: world_options.borderWidth || 1,
-    borderStyle: world_options.borderStyle || 'solid',
-    borderColor: world_options.borderColor || [0, 0, 0],
+  var world = Burner.System.add('World', {
+    el: options.el || document.body,
+    color: options.color || [40, 40, 40],
+    width: options.width || 800,
+    height: options.height || 600,
+    borderWidth: options.borderWidth || 1,
+    borderStyle: options.borderStyle || 'solid',
+    borderColor: options.borderColor || [0, 0, 0],
     gravity: new Vector(),
     c: 0
   });
 
   // BASE
-  var baseWidth = typeof base_options.baseWidth !== 'undefined' ? base_options.baseWidth : 10,
-      baseHeight = typeof base_options.baseHeight !== 'undefined' ? base_options.baseHeight : 10,
-      baseColor = typeof base_options.baseHeight !== 'undefined' ? base_options.baseColor : 0,
-      basePerlin = typeof base_options.basePerlin !== 'undefined' ? base_options.basePerlin : true,
-      basePerlinSpeed = base_options.basePerlinSpeed || 0.0001,
-      basePerlinTime = base_options.basePerlinTime || 100,
-      baseInitialLocation = base_options.baseInitialLocation || new Vector(this.world.width / 2, this.world.height),
-      baseAmplitude = base_options.baseAmplitude || new Vector(this.world.width / 4, 0),
-      baseOpacity = base_options.baseOpacity || 0,
-      particleOptions = base_options.particleOptions || {};
+  this.base.configure(world);
+  var myBase = Burner.System.add('Oscillator', this.base);
 
-  this.base = Burner.System.add('Oscillator', {
-    width: baseWidth,
-    height: baseHeight,
-    color: [baseColor, baseColor, baseColor],
-    perlin: basePerlin,
-    perlinSpeed: basePerlinSpeed,
-    perlinTime: basePerlinTime,
-    initialLocation: baseInitialLocation,
-    amplitude: baseAmplitude,
-    acceleration: new Vector(),
-    aVelocity: new Vector(),
-    opacity: baseOpacity,
-    afterStep: this._baseAfterStep.bind(this, particleOptions)
-  });
+  // SPINE
+  for (var i = 0, max = Math.floor(world.height / this.spine.density); i < max; i++) {
 
-  // JOINTS and PILLOWS
-  var jointDensity = joint_options.jointDensity || 25,
-      jointOpacity = joint_options.jointOpacity || 0,
-      jointEasing = joint_options.jointEasing || 'easeInCirc',
-      jointWidth = joint_options.jointWidth || 10,
-      jointHeight = joint_options.jointHeight || 10;
-
-  var funnelMinWidth = typeof pillow_options.funnelMinWidth !== 'undefined' ? pillow_options.funnelMinWidth : 5,
-      pillowWidth = pillow_options.pillowWidth || 0,
-      pillowHeight = pillow_options.pillowHeight || 0,
-      pillowOpacity = typeof pillow_options.pillowOpacity !== 'undefined' ? pillow_options.pillowOpacity : 0.75,
-      pillowBlur = typeof pillow_options.pillowBlur !== 'undefined' ? pillow_options.pillowBlur : 350,
-      pillowSpread = typeof pillow_options.pillowSpread !== 'undefined' ? pillow_options.pillowSpread : 250,
-      pillowEasing = pillow_options.pillowEasing || 'easeInExpo',
-      pillowColorMin = typeof pillow_options.pillowColorMin !== 'undefined' ? pillow_options.pillowColorMin : 50,
-      pillowColorMax = typeof pillow_options.pillowColorMax !== 'undefined' ? pillow_options.pillowColorMax : 255;
-
-  for (var i = 0, max = Math.floor(this.world.height / jointDensity); i < max; i++) {
-
-    var ease = Easing[jointEasing].call(null, i, 0, 1, max - 1);
+    var ease = Easing[this.spine.easing].call(null, i, 0, 1, max - 1);
 
     // joints
     var joint = Burner.System.add('Mover', {
-      width: jointWidth,
-      height: jointHeight,
-      parent: this.base,
-      offsetDistance: ease * this.world.height,
+      parent: myBase,
+      offsetDistance: ease * world.height,
       offsetAngle: 270,
-      opacity: jointOpacity,
+      opacity: this.spine.opacity,
       afterStep: this._jointAfterStep
     });
     joint.index = i;
@@ -2873,157 +2938,47 @@ TinyTornado.prototype._setupCallback = function(world_options, base_options, joi
         SimplexNoise.noise(i * 0.1, 0) * 20;
 
     // pillows
-    var easePillowShape = Easing[pillowEasing].call(null, i, 0, 1, max - 1);
+    var easeShellShape = Easing[this.shell.easing].call(null, i, 0, 1, max - 1);
 
     var colorNoise = Math.floor(Utils.map(SimplexNoise.noise(i * 0.05, 0),
-        -1, 1, pillowColorMin, pillowColorMax));
+        -1, 1, this.shell.colorMin, this.shell.colorMax));
 
     Burner.System.add('Oscillator', {
+      width: 0,
+      height: 0,
       parent: joint,
-      width: pillowWidth,
-      height: pillowHeight,
-      opacity: pillowOpacity,
+      opacity: this.shell.opacity,
       color: [colorNoise, colorNoise, colorNoise],
-      boxShadowBlur: (easePillowShape * pillowBlur) + funnelMinWidth,
-      boxShadowSpread: (easePillowShape * pillowSpread) + funnelMinWidth,
+      boxShadowBlur: (easeShellShape * this.shell.blur) + this.shell.minWidth,
+      boxShadowSpread: (easeShellShape * this.shell.spread) + this.shell.minWidth,
       boxShadowColor: [colorNoise, colorNoise, colorNoise],
       perlin: false,
-      initialLocation: new Vector(this.world.width / 2, this.world.height),
-      amplitude: new Vector((2 - easePillowShape) * 1, 0),
+      amplitude: new Vector((2 - easeShellShape) * 1, 0),
       acceleration: new Vector(1 / (i + 1), 0)
-    });
-  }
-
-  // MASKS
-  var maskWidth = (document.body.scrollWidth - this.world.width) / 2,
-    maskHeight = (document.body.scrollHeight - this.world.height) / 2;
-
-  this._createMask({ // top
-    location: new Burner.Vector(this.world.width/2, -1 - maskHeight / 2),
-    width: this.world.width + 10,
-    height: maskHeight
-  });
-
-  this._createMask({ // bottom
-    location: new Burner.Vector(this.world.width/2, this.world.height + 1 + maskHeight / 2),
-    width: this.world.width + 10,
-    height: maskHeight
-  });
-
-  this._createMask({ // left
-    location: new Burner.Vector(-1 - maskWidth / 2, this.world.height / 2),
-    width: maskWidth,
-    height: document.body.scrollHeight
-  });
-
-  this._createMask({ // right
-    location: new Burner.Vector(this.world.width + 1 + maskWidth / 2, this.world.height / 2),
-    width: maskWidth,
-    height: document.body.scrollHeight
-  });
-};
-
-/**
- * Creates div elements around the world to mask
- * the TinyTornado's overflow.
- * @param {Object} options A map of properties.
- * @param {Object} options.location Location.
- * @param {Object} options.width Width.
- * @param {Object} options.height Height.
- * @memberof TinyTornado
- * @private
- */
-TinyTornado.prototype._createMask = function(options) {
-  Burner.System.add('Mover', {
-    location: options.location,
-    width: options.width,
-    height: options.height,
-    isStatic: true,
-    borderRadius: 0,
-    borderWidth: 0,
-    zIndex: 100,
-    color: [20, 20, 20]
-  });
-};
-
-/**
- * Called at the end of the base's step function.
- * @memberof TinyTornado
- * @private
- */
-TinyTornado.prototype._baseAfterStep = function(options) {
-
-  var base = this.base;
-
-  // use life to throttle particle system
-  if ((Burner.System.clock % 3) === 0) {
-
-    var accel = new Vector(1, 1);
-    accel.normalize();
-    accel.mult(Utils.getRandomNumber(0.01, 0.1, true));
-    accel.rotate(Utils.degreesToRadians(Utils.getRandomNumber(150, 300)));
-
-    var width = options.width || 0;
-    var height = options.height || 0;
-
-    var sizeMin = typeof options.sizeMin !== 'undefined' ? options.sizeMin : 1;
-    var sizeMax = typeof options.sizeMax !== 'undefined' ? options.sizeMax : 3;
-    var size = Utils.getRandomNumber(sizeMin, sizeMax, sizeMin || sizeMax);
-
-    var speedMin = typeof options.speedMin !== 'undefined' ? options.speedMin : 1;
-    var speedMax = typeof options.speedMax !== 'undefined' ? options.speedMax : 20;
-    var maxSpeed = Utils.getRandomNumber(speedMin, speedMax, true);
-
-    var opacityMin = typeof options.opacityMin !== 'undefined' ? options.opacityMin : 0.1;
-    var opacityMax = typeof options.opacityMax !== 'undefined' ? options.opacityMax : 0.2;
-    var opacity = Utils.getRandomNumber(opacityMin, opacityMax, true);
-
-    var lifespanMin = typeof options.lifespanMin !== 'undefined' ? options.lifespanMin : 70;
-    var lifespanMax = typeof options.lifespanMax !== 'undefined' ? options.lifespanMax : 120;
-    var lifespan = Utils.getRandomNumber(lifespanMin, lifespanMax);
-
-    var colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 100;
-    var colorMax = typeof options.colorMax !== 'undefined' ? options.colorMax : 200;
-    var color = Utils.getRandomNumber(colorMin, colorMax);
-
-    Burner.System.add('Particle', {
-      location: new Vector(base.location.x, base.location.y),
-      acceleration: accel,
-      width: width,
-      height: height,
-      color: [color, color, color],
-      borderWidth: 0,
-      boxShadowBlur: size * 10,
-      boxShadowSpread: size * 3,
-      boxShadowColor: [color, color, color],
-      maxSpeed: maxSpeed,
-      opacity: opacity,
-      lifespan: lifespan
     });
   }
 };
 
 /**
  * Called at the end of the joints' step function.
- * @memberof TinyTornado
+ * @memberof Vortex
  * @private
  */
-TinyTornado.prototype._jointAfterStep = function() {
-  var offset = this.index * this.offsetFromCenter * TinyTornado.noise;
+Vortex.prototype._jointAfterStep = function() {
+  var offset = this.index * this.offsetFromCenter * Vortex.noise;
   this.location.x = this.location.x + (offset);
 };
 
 /**
  * Called at the end of each animation frame.
- * @memberof TinyTornado
+ * @memberof Vortex
  * @private
  */
-TinyTornado.prototype._getNoise = function() {
-  TinyTornado.noise = SimplexNoise.noise(Burner.System.clock * 0.0001, 0);
+Vortex.prototype._getNoise = function() {
+  Vortex.noise = SimplexNoise.noise(Burner.System.clock * 0.0001, 0);
 };
 
-module.exports = TinyTornado;
-
-},{"./easing":10,"./mover":11,"./oscillator":12,"./particle":13,"burner":2,"drawing-utils-lib":5,"quietriot":7,"vector2d-lib":8}]},{},[14])
-(14)
+module.exports = Vortex;
+},{"./easing":11,"./mover":13,"./oscillator":14,"./particle":15,"burner":2,"drawing-utils-lib":5,"quietriot":7,"vector2d-lib":8}]},{},[12])
+(12)
 });
