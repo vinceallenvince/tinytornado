@@ -50,7 +50,7 @@ module.exports = function(grunt) {
     exec: {
       test: 'npm test',
       coverage: 'browserify -t coverify test/*.js | testling | coverify',
-      browserify: 'mkdir ' + releaseDir + ' && browserify ./src/tinytornado.js --standalone ' + standaloneNamespace + ' -o ' + devRelease,
+      browserify: 'mkdir ' + releaseDir + ' && browserify ./src/main.js --standalone ' + standaloneNamespace + ' -o ' + devRelease,
       ghPagesIndex: './gh-pages-index.sh ' + standaloneNamespace
     },
     plato: {

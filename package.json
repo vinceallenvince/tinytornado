@@ -36,6 +36,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "colorpalette": "~0.1.5",
     "florajs": "~3.0.6",
     "burner": "^3.1.0",
     "vector2d-lib": "^0.0.7",
