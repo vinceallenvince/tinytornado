@@ -17,12 +17,13 @@
       var base = new TinyTornado.Base({
         opacity: 0
       });
+      var storm = new TinyTornado.Storm();
       var spine = new TinyTornado.Spine({
         opacity: 0
       });
       var shell = new TinyTornado.Shell();
 
-      var vortex = new TinyTornado.Vortex(base, spine, shell);
+      var vortex = new TinyTornado.Vortex(base, storm, spine, shell);
       vortex.init();
 
       /*var tinytornado = new TinyTornado();

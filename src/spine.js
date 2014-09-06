@@ -5,6 +5,7 @@
  * @param {number} [opt_options.density = 25] Determines number of joints in the spine. Lower values = more joints.
  * @param {number} [opt_options.opacity = 0] Opacity.
  * @param {string} [opt_options.easing = 'easeInCirc'] An easing function to determine joint distribution along the spine. See Easing docs for possible values.
+ * @constructor
  */
 function Spine(opt_options) {
 

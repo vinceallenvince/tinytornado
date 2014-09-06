@@ -344,7 +344,7 @@ Item.prototype.getCSSText = function(props) {
 
 module.exports = Item;
 
-},{"vector2d-lib":8}],2:[function(_dereq_,module,exports){
+},{"vector2d-lib":9}],2:[function(_dereq_,module,exports){
 module.exports = {
   Item: _dereq_('./item'),
   System: _dereq_('./system'),
@@ -353,7 +353,7 @@ module.exports = {
   World: _dereq_('./world')
 };
 
-},{"./item":1,"./system":3,"./world":4,"drawing-utils-lib":5,"vector2d-lib":8}],3:[function(_dereq_,module,exports){
+},{"./item":1,"./system":3,"./world":4,"drawing-utils-lib":6,"vector2d-lib":9}],3:[function(_dereq_,module,exports){
 /*global window, document */
 /*jshint supernew:true */
 
@@ -848,7 +848,7 @@ System._toggleFPS = function() {
 
 module.exports = System;
 
-},{"./item":1,"./world":4,"drawing-utils-lib":5,"fpsdisplay":6,"vector2d-lib":8}],4:[function(_dereq_,module,exports){
+},{"./item":1,"./world":4,"drawing-utils-lib":6,"fpsdisplay":7,"vector2d-lib":9}],4:[function(_dereq_,module,exports){
 var Vector = _dereq_('vector2d-lib'),
     Item = _dereq_('./item'),
     Utils = _dereq_('drawing-utils-lib');
@@ -964,7 +964,171 @@ World.prototype.getCSSText = function(props) {
 
 module.exports = World;
 
-},{"./item":1,"drawing-utils-lib":5,"vector2d-lib":8}],5:[function(_dereq_,module,exports){
+},{"./item":1,"drawing-utils-lib":6,"vector2d-lib":9}],5:[function(_dereq_,module,exports){
+var Utils = _dereq_('drawing-utils-lib');
+/**
+ * Creates a new ColorPalette object.
+ *
+ * Use this class to create a palette of colors randomly selected
+ * from a range created with initial start and end colors. You
+ * can also generate gradients that smoothly interpolate from
+ * start and end colors.
+ *
+ * @param {string|number} [opt_id=] An optional id. If an id is not passed, a default id is created.
+ * @constructor
+ */
+function ColorPalette(opt_id) {
+
+  /**
+   * Holds a list of arrays representing 3-digit color values
+   * smoothly interpolated between start and end colors.
+   * @private
+   */
+  this._gradients = [];
+
+  /**
+   * Holds a list of arrays representing 3-digit color values
+   * randomly selected from start and end colors.
+   * @private
+   */
+  this._colors = [];
+
+  this.id = opt_id || ColorPalette._idCount;
+  ColorPalette._idCount++; // increment id
+}
+
+/**
+ * Increments as each ColorPalette is created.
+ * @type number
+ * @default 0
+ * @private
+ */
+ColorPalette._idCount = 0;
+
+ColorPalette.prototype.name = 'ColorPalette';
+
+/**
+ * Creates a color range of 255 colors from the passed start and end colors.
+ * Adds a random selection of these colors to the color property of
+ * the color palette.
+ *
+ * @param {Object} options A set of required options
+ *    that includes:
+ *    options.min {number} The minimum number of colors to add.
+ *    options.max {number} The maximum number of color to add.
+ *    options.startColor {Array} The beginning color of the color range.
+ *    options.endColor {Array} The end color of the color range.
+ */
+ColorPalette.prototype.addColor = function(options) {
+
+  if (!options.min || !options.max || !options.startColor || !options.endColor) {
+    throw new Error('ColorPalette.addColor must pass min, max, startColor and endColor options.');
+  }
+
+  var i, ln, colors;
+
+  ln = Utils.getRandomNumber(options.min, options.max);
+  colors = ColorPalette._createColorRange(options.startColor, options.endColor, 255);
+
+  for (i = 0; i < ln; i++) {
+    this._colors.push(colors[Utils.getRandomNumber(0, colors.length - 1)]);
+  }
+
+  return this;
+};
+
+/**
+ * Creates an array of RGB color values interpolated between
+ * a passed startColor and endColor.
+ *
+ * @param {Array} startColor The beginning of the color array.
+ * @param {Array} startColor The end of the color array.
+ * @param {number} totalColors The total numnber of colors to create.
+ * @returns {Array} An array of color values.
+ */
+ColorPalette._createColorRange = function(startColor, endColor, totalColors) {
+
+  var i, colors = [],
+      startRed = startColor[0],
+      startGreen = startColor[1],
+      startBlue = startColor[2],
+      endRed = endColor[0],
+      endGreen = endColor[1],
+      endBlue = endColor[2],
+      diffRed, diffGreen, diffBlue,
+      newRed, newGreen, newBlue;
+
+  diffRed = endRed - startRed;
+  diffGreen = endGreen - startGreen;
+  diffBlue = endBlue - startBlue;
+
+  for (i = 0; i < totalColors; i++) {
+    newRed = parseInt(diffRed * i/totalColors, 10) + startRed;
+    newGreen = parseInt(diffGreen * i/totalColors, 10) + startGreen;
+    newBlue = parseInt(diffBlue * i/totalColors, 10) + startBlue;
+    colors.push([newRed, newGreen, newBlue]);
+  }
+  return colors;
+};
+
+/**
+ * @returns An array representing a randomly selected color
+ *    from the colors property.
+ * @throws {Error} If the colors property is empty.
+ */
+ColorPalette.prototype.getColor = function() {
+
+  if (this._colors.length > 0) {
+    return this._colors[Utils.getRandomNumber(0, this._colors.length - 1)];
+  } else {
+    throw new Error('ColorPalette.getColor: You must add colors via addColor() before using getColor().');
+  }
+};
+
+// TODO: add the following
+
+/**
+ * Adds color arrays representing a color range to the gradients property.
+ *
+ * @param {Object} options A set of required options
+ *    that includes:
+ *    options.startColor {Array} The beginning color of the color range.
+ *    options.endColor {Array} The end color of the color range.
+ *    options.totalColors {number} The total number of colors in the gradient.
+ * @private
+ */
+/*ColorPalette.prototype.createGradient = function(options) {
+
+  if (!options.startColor || !options.endColor || !options.totalColors) {
+    throw new Error('ColorPalette.addColor must pass startColor, endColor and totalColors options.');
+  }
+  this.startColor = options.startColor;
+  this.endColor = options.endColor;
+  this.totalColors = options.totalColors || 255;
+  this._gradients.push(ColorPalette._createColorRange(this.startColor, this.endColor, this.totalColors));
+};*/
+
+/**
+ * Renders a strip of colors representing the color range
+ * in the colors property.
+ *
+ * @param {Object} parent A DOM object to contain the color strip.
+ */
+/*ColorPalette.prototype.createSampleStrip = function(parent) {
+
+  var i, max, div;
+
+  for (i = 0, max = this._colors.length; i < max; i++) {
+    div = document.createElement('div');
+    div.className = 'color-sample-strip';
+    div.style.background = 'rgb(' + this._colors[i].toString() + ')';
+    parent.appendChild(div);
+  }
+};*/
+
+module.exports = ColorPalette;
+
+},{"drawing-utils-lib":6}],6:[function(_dereq_,module,exports){
 /*jshint supernew:true */
 /** @namespace */
 var Utils = {
@@ -1135,7 +1299,7 @@ Utils.capitalizeFirstLetter = function(string) {
 };
 
 module.exports = Utils;
-},{}],6:[function(_dereq_,module,exports){
+},{}],7:[function(_dereq_,module,exports){
 /*global document, window */
 
 /**
@@ -1326,7 +1490,7 @@ FPSDisplay.show = function() {
 
 module.exports = FPSDisplay;
 
-},{}],7:[function(_dereq_,module,exports){
+},{}],8:[function(_dereq_,module,exports){
 /*jshint bitwise:false */
 /**
 * https://gist.github.com/304522
@@ -1457,7 +1621,7 @@ SimplexNoise.dot = function(g, x, y) {
 
 module.exports = SimplexNoise;
 
-},{}],8:[function(_dereq_,module,exports){
+},{}],9:[function(_dereq_,module,exports){
 /*global exports, Vector */
 /*jshint supernew:true */
 
@@ -1712,7 +1876,359 @@ Vector.prototype.dot = function(vector) {
 };
 
 module.exports = Vector;
-},{}],9:[function(_dereq_,module,exports){
+},{}],10:[function(_dereq_,module,exports){
+var Burner = _dereq_('burner');
+var Utils = _dereq_('drawing-utils-lib');
+var Vector = _dereq_('vector2d-lib');
+
+/**
+ * Creates a new Base.
+ * @param {Object} [opt_options=] A map of initial properties.
+ * @param {boolean} [opt_options.width = 10] Width.
+ * @param {boolean} [opt_options.height = 10] Height.
+ * @param {boolean} [opt_options.color = 0] Color.
+ * @param {boolean} [opt_options.perlin = true] Set to true to move the base via perlin noise.
+ * @param {number} [opt_options.perlinSpeed = 0.0001] Perlin speed.
+ * @param {number} [opt_options.perlinTime = 100] Initial perlin time.
+ * @param {Object} [opt_options.initialLocation = bottom middle of the world] Initial base location.
+ * @param {Object} [opt_options.amplitude = world.width / 4, 0] Limit of the base location.
+ * @param {number} [opt_options.opacity = 0] Opacity.
+ * @constructor
+ */
+function Base(opt_options) {
+
+  var options = opt_options || {};
+
+  this.width = typeof options.width !== 'undefined' ? options.width : 10;
+  this.height = typeof options.height !== 'undefined' ? options.height : 10;
+  this.color = typeof options.color !== 'undefined' ? options.color : 0;
+  this.perlin = typeof options.perlin !== 'undefined' ? options.perlin : true;
+  this.perlinSpeed = options.perlinSpeed || 0.0001;
+  this.perlinTime = options.perlinTime || 100;
+  this.initialLocation = options.initialLocation || null;
+  this.amplitude = options.amplitude || null;
+  this.opacity = options.opacity || 0;
+  this.particleOptions = options.particleOptions || {};
+}
+
+/**
+ * Configures an instance.
+ * @param  {Object} world A world.
+ * @memberOf Base
+ */
+Base.prototype.configure = function(world) {
+  this.initialLocation = new Vector(world.width / 2, world.height);
+  this.amplitude = new Vector(world.width / 4, 0);
+};
+
+module.exports = Base;
+
+},{"burner":2,"drawing-utils-lib":6,"vector2d-lib":9}],11:[function(_dereq_,module,exports){
+/**
+ * Robert Penner's easing functions. http://gizma.com/easing/
+ * @namespace
+ */
+var Easing = {};
+
+/**
+ * Simple linear tweening - no easing, no acceleration
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.linearTween = function (t, b, c, d) {
+  return c * t / d + b;
+};
+
+/**
+ * Quadratic easing in - accelerating from zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInQuad = function (t, b, c, d) {
+  t /= d;
+  return c * t * t + b;
+};
+
+/**
+ * Quadratic easing out - decelerating to zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeOutQuad = function (t, b, c, d) {
+  t /= d;
+  return -c * t *(t - 2) + b;
+};
+
+/**
+ * Quadratic easing in/out - acceleration until halfway, then deceleration
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInOutQuad = function (t, b, c, d) {
+  t /= d / 2;
+  if (t < 1) return c / 2 * t * t + b;
+  t--;
+  return -c / 2 * (t * (t - 2) - 1) + b;
+};
+
+/**
+ * Cubic easing in - accelerating from zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInCubic = function (t, b, c, d) {
+  t /= d;
+  return c * t * t * t + b;
+};
+
+/**
+ * Cubic easing out - decelerating to zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeOutCubic = function (t, b, c, d) {
+  t /= d;
+  t--;
+  return c* (t * t * t + 1) + b;
+};
+
+/**
+ * Cubic easing in/out - acceleration until halfway, then deceleration
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInOutCubic = function (t, b, c, d) {
+  t /= d / 2;
+  if (t < 1) return c / 2 * t * t * t + b;
+  t -= 2;
+  return c / 2 * (t * t * t + 2) + b;
+};
+
+/**
+ * Quartic easing in - accelerating from zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInQuart = function (t, b, c, d) {
+  t /= d;
+  return c * t * t * t * t + b;
+};
+
+/**
+ * Quartic easing out - decelerating to zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeOutQuart = function (t, b, c, d) {
+  t /= d;
+  t--;
+  return -c * (t * t * t * t - 1) + b;
+};
+
+/**
+ * Quartic easing in/out - acceleration until halfway, then deceleration
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInOutQuart = function (t, b, c, d) {
+  t /= d / 2;
+  if (t < 1) return c / 2 * t * t * t * t + b;
+  t -= 2;
+  return -c / 2 * ( t * t * t * t - 2) + b;
+};
+
+/**
+ * Quintic easing in - accelerating from zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInQuint = function (t, b, c, d) {
+  t /= d;
+  return c * t * t * t * t * t + b;
+};
+
+/**
+ * Quintic easing out - decelerating to zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeOutQuint = function (t, b, c, d) {
+  t /= d;
+  t--;
+  return c * (t * t * t * t * st + 1) + b;
+};
+
+/**
+ * Quintic easing in/out - acceleration until halfway, then deceleration
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInOutQuint = function (t, b, c, d) {
+  t /= d / 2;
+  if (t < 1) return c / 2 * t * t * t * t * t + b;
+  t -= 2;
+  return c / 2 * (t * t * t * t * t + 2) + b;
+};
+
+/**
+ * Sinusoidal easing in - accelerating from zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInSine = function (t, b, c, d) {
+  return -c * Math.cos(t / d * (Math.PI / 2)) + c + b;
+};
+
+/**
+ * Sinusoidal easing out - decelerating to zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeOutSine = function (t, b, c, d) {
+  return c * Math.sin(t / d * (Math.PI / 2)) + b;
+};
+
+/**
+ * Sinusoidal easing in/out - accelerating until halfway, then decelerating
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInOutSine = function (t, b, c, d) {
+  return -c / 2 * (Math.cos(Math.PI * t / d) - 1) + b;
+};
+
+/**
+ * Exponential easing in - accelerating from zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInExpo = function (t, b, c, d) {
+  return c * Math.pow(2, 10 * (t / d - 1) ) + b;
+};
+
+/**
+ * Exponential easing out - decelerating to zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeOutExpo = function (t, b, c, d) {
+  return c * (-Math.pow(2, -10 * t / d ) + 1 ) + b;
+};
+
+/**
+ * Exponential easing in/out - accelerating until halfway, then decelerating
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInOutExpo = function (t, b, c, d) {
+  t /= d / 2;
+  if (t < 1) return c / 2 * Math.pow(2, 10 * (t - 1) ) + b;
+  t--;
+  return c / 2 * (-Math.pow(2, -10 * t) + 2 ) + b;
+};
+
+/**
+ * Circular easing in - accelerating from zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInCirc = function (t, b, c, d) {
+  t /= d;
+  return -c * (Math.sqrt(1 - t * t) - 1) + b;
+};
+
+/**
+ * Circular easing out - decelerating to zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeOutCirc = function (t, b, c, d) {
+  t /= d;
+  t--;
+  return c * Math.sqrt(1 - t * t) + b;
+};
+
+/**
+ * Circular easing in/out - acceleration until halfway, then deceleration
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInOutCirc = function (t, b, c, d) {
+  t /= d / 2;
+  if (t < 1) return -c / 2 * (Math.sqrt(1 - t * t) - 1) + b;
+  t -= 2;
+  return c / 2 * (Math.sqrt(1 - t * t) + 1) + b;
+};
+
+module.exports = Easing;
+
+},{}],12:[function(_dereq_,module,exports){
 var Item = _dereq_('burner').Item,
     System = _dereq_('burner').System,
     Utils = _dereq_('burner').Utils,
@@ -2046,425 +2562,8 @@ Mover.prototype.getCSSText = function(props) {
 module.exports = Mover;
 
 
-},{"burner":2}],10:[function(_dereq_,module,exports){
-var Burner = _dereq_('burner');
-var Utils = _dereq_('drawing-utils-lib');
-var Vector = _dereq_('vector2d-lib');
-
-/**
- * Creates a new Base.
- *
- * @param {Object} [opt_options=] A map of initial properties.
- * @param {boolean} [opt_options.width = 10] Width.
- * @param {boolean} [opt_options.height = 10] Height.
- * @param {boolean} [opt_options.color = 0] Color.
- * @param {boolean} [opt_options.perlin = true] Set to true to move the base via perlin noise.
- * @param {number} [opt_options.perlinSpeed = 0.0001] Perlin speed.
- * @param {number} [opt_options.perlinTime = 100] Initial perlin time.
- * @param {Object} [opt_options.initialLocation = bottom middle of the world] Initial base location.
- * @param {Object} [opt_options.amplitude = world.width / 4, 0] Limit of the base location.
- * @param {number} [opt_options.opacity = 0] Opacity.
- * @param {Object} [opt_base_options.particleOptions=] A map of particleOptions.
- * @param {number} [opt_base_options.particleOptions.width = 0] Particle width.
- * @param {number} [opt_base_options.particleOptions.height = 0] Particle height.
- * @param {number} [opt_base_options.particleOptions.sizeMin = 1] Minimum particle size.
- * @param {number} [opt_base_options.particleOptions.sizeMax = 3] Maximum particle size.
- * @param {number} [opt_base_options.particleOptions.speedMin = 1] Minimum particle speed.
- * @param {number} [opt_base_options.particleOptions.speedMax = 20] Maximum particle speed.
- * @param {number} [opt_base_options.particleOptions.opacityMin = 0.1] Minimum opacity.
- * @param {number} [opt_base_options.particleOptions.opacityMax = 0.2] Maximum opacity.
- * @param {number} [opt_base_options.particleOptions.colorMin = 100] Minimum color. Valid values bw 0 - 255.
- * @param {number} [opt_base_options.particleOptions.colorMax = 200] Maximum color. Valid values bw 0 - 255.
- */
-function Base(opt_options) {
-
-  var options = opt_options || {};
-
-  this.width = typeof options.width !== 'undefined' ? options.width : 10;
-  this.height = typeof options.height !== 'undefined' ? options.height : 10;
-  this.color = typeof options.color !== 'undefined' ? options.color : 0;
-  this.perlin = typeof options.perlin !== 'undefined' ? options.perlin : true;
-  this.perlinSpeed = options.perlinSpeed || 0.0001;
-  this.perlinTime = options.perlinTime || 100;
-  this.initialLocation = options.initialLocation || null;
-  this.amplitude = options.amplitude || null;
-  this.opacity = options.opacity || 0;
-  this.particleOptions = options.particleOptions || {};
-}
-
-Base.prototype.configure = function(world) {
-  this.initialLocation = new Vector(world.width / 2, world.height);
-  this.amplitude = new Vector(world.width / 4, 0);
-};
-
-/*Base.prototype._baseAfterStep = function() {
-
-  var options = this.particleOptions;
-
-  // use life to throttle particle system
-  if ((Burner.System.clock % 3) === 0) {
-
-    var accel = new Vector(1, 1);
-    accel.normalize();
-    accel.mult(Utils.getRandomNumber(0.01, 0.1, true));
-    accel.rotate(Utils.degreesToRadians(Utils.getRandomNumber(150, 300)));
-
-    var width = options.width || 0;
-    var height = options.height || 0;
-
-    var sizeMin = typeof options.sizeMin !== 'undefined' ? options.sizeMin : 1;
-    var sizeMax = typeof options.sizeMax !== 'undefined' ? options.sizeMax : 3;
-    var size = Utils.getRandomNumber(sizeMin, sizeMax, sizeMin || sizeMax);
-
-    var speedMin = typeof options.speedMin !== 'undefined' ? options.speedMin : 1;
-    var speedMax = typeof options.speedMax !== 'undefined' ? options.speedMax : 20;
-    var maxSpeed = Utils.getRandomNumber(speedMin, speedMax, true);
-
-    var opacityMin = typeof options.opacityMin !== 'undefined' ? options.opacityMin : 0.1;
-    var opacityMax = typeof options.opacityMax !== 'undefined' ? options.opacityMax : 0.2;
-    var opacity = Utils.getRandomNumber(opacityMin, opacityMax, true);
-
-    var lifespanMin = typeof options.lifespanMin !== 'undefined' ? options.lifespanMin : 70;
-    var lifespanMax = typeof options.lifespanMax !== 'undefined' ? options.lifespanMax : 120;
-    var lifespan = Utils.getRandomNumber(lifespanMin, lifespanMax);
-
-    var colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 100;
-    var colorMax = typeof options.colorMax !== 'undefined' ? options.colorMax : 200;
-    var color = Utils.getRandomNumber(colorMin, colorMax);
-
-    Burner.System.add('Particle', {
-      location: new Vector(this.location.x, this.location.y),
-      acceleration: accel,
-      width: width,
-      height: height,
-      color: [color, color, color],
-      borderWidth: 0,
-      boxShadowBlur: size * 10,
-      boxShadowSpread: size * 3,
-      boxShadowColor: [color, color, color],
-      maxSpeed: maxSpeed,
-      opacity: opacity,
-      lifespan: lifespan
-    });
-  }
-};*/
-
-module.exports = Base;
-},{"burner":2,"drawing-utils-lib":5,"vector2d-lib":8}],11:[function(_dereq_,module,exports){
-/**
- * Robert Penner's easing functions. http://gizma.com/easing/
- * @namespace
- */
-var Easing = {};
-
-/**
- * Simple linear tweening - no easing, no acceleration
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.linearTween = function (t, b, c, d) {
-  return c * t / d + b;
-};
-
-/**
- * Quadratic easing in - accelerating from zero velocity
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeInQuad = function (t, b, c, d) {
-  t /= d;
-  return c * t * t + b;
-};
-
-/**
- * Quadratic easing out - decelerating to zero velocity
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeOutQuad = function (t, b, c, d) {
-  t /= d;
-  return -c * t *(t - 2) + b;
-};
-
-/**
- * Quadratic easing in/out - acceleration until halfway, then deceleration
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeInOutQuad = function (t, b, c, d) {
-  t /= d / 2;
-  if (t < 1) return c / 2 * t * t + b;
-  t--;
-  return -c / 2 * (t * (t - 2) - 1) + b;
-};
-
-/**
- * Cubic easing in - accelerating from zero velocity
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeInCubic = function (t, b, c, d) {
-  t /= d;
-  return c * t * t * t + b;
-};
-
-/**
- * Cubic easing out - decelerating to zero velocity
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeOutCubic = function (t, b, c, d) {
-  t /= d;
-  t--;
-  return c* (t * t * t + 1) + b;
-};
-
-/**
- * Cubic easing in/out - acceleration until halfway, then deceleration
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeInOutCubic = function (t, b, c, d) {
-  t /= d / 2;
-  if (t < 1) return c / 2 * t * t * t + b;
-  t -= 2;
-  return c / 2 * (t * t * t + 2) + b;
-};
-
-/**
- * Quartic easing in - accelerating from zero velocity
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeInQuart = function (t, b, c, d) {
-  t /= d;
-  return c * t * t * t * t + b;
-};
-
-/**
- * Quartic easing out - decelerating to zero velocity
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeOutQuart = function (t, b, c, d) {
-  t /= d;
-  t--;
-  return -c * (t * t * t * t - 1) + b;
-};
-
-/**
- * Quartic easing in/out - acceleration until halfway, then deceleration
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeInOutQuart = function (t, b, c, d) {
-  t /= d / 2;
-  if (t < 1) return c / 2 * t * t * t * t + b;
-  t -= 2;
-  return -c / 2 * ( t * t * t * t - 2) + b;
-};
-
-/**
- * Quintic easing in - accelerating from zero velocity
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeInQuint = function (t, b, c, d) {
-  t /= d;
-  return c * t * t * t * t * t + b;
-};
-
-/**
- * Quintic easing out - decelerating to zero velocity
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeOutQuint = function (t, b, c, d) {
-  t /= d;
-  t--;
-  return c * (t * t * t * t * st + 1) + b;
-};
-
-/**
- * Quintic easing in/out - acceleration until halfway, then deceleration
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeInOutQuint = function (t, b, c, d) {
-  t /= d / 2;
-  if (t < 1) return c / 2 * t * t * t * t * t + b;
-  t -= 2;
-  return c / 2 * (t * t * t * t * t + 2) + b;
-};
-
-/**
- * Sinusoidal easing in - accelerating from zero velocity
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeInSine = function (t, b, c, d) {
-  return -c * Math.cos(t / d * (Math.PI / 2)) + c + b;
-};
-
-/**
- * Sinusoidal easing out - decelerating to zero velocity
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeOutSine = function (t, b, c, d) {
-  return c * Math.sin(t / d * (Math.PI / 2)) + b;
-};
-
-/**
- * Sinusoidal easing in/out - accelerating until halfway, then decelerating
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeInOutSine = function (t, b, c, d) {
-  return -c / 2 * (Math.cos(Math.PI * t / d) - 1) + b;
-};
-
-/**
- * Exponential easing in - accelerating from zero velocity
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeInExpo = function (t, b, c, d) {
-  return c * Math.pow(2, 10 * (t / d - 1) ) + b;
-};
-
-/**
- * Exponential easing out - decelerating to zero velocity
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeOutExpo = function (t, b, c, d) {
-  return c * (-Math.pow(2, -10 * t / d ) + 1 ) + b;
-};
-
-/**
- * Exponential easing in/out - accelerating until halfway, then decelerating
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeInOutExpo = function (t, b, c, d) {
-  t /= d / 2;
-  if (t < 1) return c / 2 * Math.pow(2, 10 * (t - 1) ) + b;
-  t--;
-  return c / 2 * (-Math.pow(2, -10 * t) + 2 ) + b;
-};
-
-/**
- * Circular easing in - accelerating from zero velocity
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeInCirc = function (t, b, c, d) {
-  t /= d;
-  return -c * (Math.sqrt(1 - t * t) - 1) + b;
-};
-
-/**
- * Circular easing out - decelerating to zero velocity
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeOutCirc = function (t, b, c, d) {
-  t /= d;
-  t--;
-  return c * Math.sqrt(1 - t * t) + b;
-};
-
-/**
- * Circular easing in/out - acceleration until halfway, then deceleration
- * @param  {number} t current time
- * @param  {number} b start value
- * @param  {number} c change in value
- * @param  {number} d duration
- * @return {number} The current easing value.
- */
-Easing.easeInOutCirc = function (t, b, c, d) {
-  t /= d / 2;
-  if (t < 1) return -c / 2 * (Math.sqrt(1 - t * t) - 1) + b;
-  t -= 2;
-  return c / 2 * (Math.sqrt(1 - t * t) + 1) + b;
-};
-
-module.exports = Easing;
-
-},{}],12:[function(_dereq_,module,exports){
-module.exports = {
-  Base: _dereq_('./base'),
-  Spine: _dereq_('./spine'),
-  Shell: _dereq_('./shell'),
-  Vortex: _dereq_('./vortex')
-};
-
-},{"./base":10,"./shell":16,"./spine":17,"./vortex":18}],13:[function(_dereq_,module,exports){
-module.exports=_dereq_(9)
+},{"burner":2}],13:[function(_dereq_,module,exports){
+module.exports=_dereq_(12)
 },{"burner":2}],14:[function(_dereq_,module,exports){
 var Item = _dereq_('burner').Item,
     SimplexNoise = _dereq_('quietriot'),
@@ -2661,7 +2760,7 @@ Oscillator.prototype.getCSSText = function(props) {
 
 module.exports = Oscillator;
 
-},{"burner":2,"quietriot":7}],15:[function(_dereq_,module,exports){
+},{"burner":2,"quietriot":8}],15:[function(_dereq_,module,exports){
 var Item = _dereq_('burner').Item,
     Mover = _dereq_('./Mover'),
     Utils = _dereq_('burner').Utils,
@@ -2799,7 +2898,47 @@ Particle.prototype.getCSSText = function(props) {
 module.exports = Particle;
 
 
-},{"./Mover":9,"burner":2}],16:[function(_dereq_,module,exports){
+},{"./Mover":12,"burner":2}],16:[function(_dereq_,module,exports){
+module.exports = {
+  Base: _dereq_('./base'),
+  Storm: _dereq_('./storm'),
+  Spine: _dereq_('./spine'),
+  Shell: _dereq_('./shell'),
+  Vortex: _dereq_('./vortex')
+};
+
+},{"./base":10,"./shell":18,"./spine":19,"./storm":20,"./vortex":21}],17:[function(_dereq_,module,exports){
+var Vector = _dereq_('burner').Vector;
+
+/**
+ * Creates a Mask around the tornado's world.
+ * @constructor
+ */
+function Mask() {
+  this.color = [20, 20, 20];
+  this.isStatic = true;
+  this.borderRadius = 0;
+  this.borderWidth = 0;
+  this.zIndex = 100;
+}
+
+/**
+ * Configures an instance of Mask.
+ * @param {Object} props A map of required properties.
+ * @param {Object} props.location The mask location.
+ * @param {number} props.width Width.
+ * @param {number} props.height Height.
+ * @memberOf Mask
+ */
+Mask.prototype.configure = function(props) {
+  this.location = props.location;
+  this.width = props.width;
+  this.height = props.height;
+};
+
+module.exports = Mask;
+
+},{"burner":2}],18:[function(_dereq_,module,exports){
 /**
  * Creates a new Shell.
  *
@@ -2811,6 +2950,7 @@ module.exports = Particle;
  * @param {string} [opt_options.easing = 'easeInExpo'] An easing function to determine shell shape along the spine. See Easing docs for possible values.
  * @param {number} [opt_options.colorMin = 50] Minimum color. Valid values bw 0 - 255.
  * @param {number} [opt_options.colorMax = 255] Maximum color. Valid values bw 0 - 255.
+ * @constructor
  */
 function Shell(opt_options) {
 
@@ -2826,7 +2966,8 @@ function Shell(opt_options) {
 }
 
 module.exports = Shell;
-},{}],17:[function(_dereq_,module,exports){
+
+},{}],19:[function(_dereq_,module,exports){
 /**
  * Creates a new Spine.
  *
@@ -2834,6 +2975,7 @@ module.exports = Shell;
  * @param {number} [opt_options.density = 25] Determines number of joints in the spine. Lower values = more joints.
  * @param {number} [opt_options.opacity = 0] Opacity.
  * @param {string} [opt_options.easing = 'easeInCirc'] An easing function to determine joint distribution along the spine. See Easing docs for possible values.
+ * @constructor
  */
 function Spine(opt_options) {
 
@@ -2845,18 +2987,133 @@ function Spine(opt_options) {
 }
 
 module.exports = Spine;
-},{}],18:[function(_dereq_,module,exports){
+
+},{}],20:[function(_dereq_,module,exports){
+var ColorPalette = _dereq_('colorpalette');
+var System = _dereq_('burner').System;
+var Utils = _dereq_('drawing-utils-lib');
+var Vector = _dereq_('vector2d-lib');
+
+/**
+ * Creates a new Storm.
+ * @param {Object} [opt_options=] A map of initial properties.
+ * @param {number} [opt_options.sizeMin = 1] Minimum particle size.
+ * @param {number} [opt_options.sizeMax = 3] Maximum particle size.
+ * @param {number} [opt_options.speedMin = 1] Minimum particle speed.
+ * @param {number} [opt_options.speedMax = 20] Maximum particle speed.
+ * @param {number} [opt_options.opacityMin = 0.1] Minimum opacity.
+ * @param {number} [opt_options.opacityMax = 0.2] Maximum opacity.
+ * @param {number} [opt_options.lifespanMin = 70] Minimum lifespan.
+ * @param {number} [opt_options.lifespanMax = 120] Maximum lifespan.
+ * @param {number} [opt_options.colorMin = 100] Minimum color. Valid values bw 0 - 255.
+ * @param {number} [opt_options.colorMax = 200] Maximum color. Valid values bw 0 - 255.
+ * @constructor
+ */
+function Storm(opt_options) {
+
+  var options = opt_options || {};
+
+  this.sizeMin = typeof options.sizeMin !== 'undefined' ? options.sizeMin : 1;
+  this.sizeMax = typeof options.sizeMax !== 'undefined' ? options.sizeMax : 3;
+  this.speedMin = typeof options.speedMin !== 'undefined' ? options.speedMin : 1;
+  this.speedMax = typeof options.speedMax !== 'undefined' ? options.speedMax : 20;
+  this.opacityMin = typeof options.opacityMin !== 'undefined' ? options.opacityMin : 0.1;
+  this.opacityMax = typeof options.opacityMax !== 'undefined' ? options.opacityMax : 0.2;
+  this.lifespanMin = typeof options.lifespanMin !== 'undefined' ? options.lifespanMin : 70;
+  this.lifespanMax = typeof options.lifespanMax !== 'undefined' ? options.lifespanMax : 120;
+  this.colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 100;
+  this.colorMax = typeof options.colorMax !== 'undefined' ? options.colorMax : 200;
+
+  this.width = 0;
+  this.height = 0;
+  this.lifespan = -1;
+  this.startColor = [100, 100, 100]; // TODO: make these options
+  this.endColor = [200, 200, 200];
+  this.pl = new ColorPalette();
+  this.pl.addColor({ // adds a random sampling of colors to palette
+    min: 12,
+    max: 24,
+    startColor: this.startColor,
+    endColor: this.endColor
+  });
+
+  this.beforeStep = this._beforeStep.bind(this);
+
+}
+
+/**
+ * Called before each step function.
+ * @private
+ * @memberOf Storm
+ */
+Storm.prototype._beforeStep = function() {
+
+  if ((System.clock % 3) === 0) {
+
+    var accel = new Vector(1, 1);
+    accel.normalize();
+    accel.mult(Utils.getRandomNumber(0.01, 0.1, true));
+    accel.rotate(Utils.degreesToRadians(Utils.getRandomNumber(150, 300)));
+    this.acceleration = accel;
+
+    var size = Utils.getRandomNumber(this.sizeMin, this.sizeMax, this.sizeMin || this.sizeMax);
+    var maxSpeed = Utils.getRandomNumber(this.speedMin, this.speedMax, true);
+    var opacity = Utils.getRandomNumber(this.opacityMin, this.opacityMax, true);
+    var lifespan = Utils.getRandomNumber(this.lifespanMin, this.lifespanMax);
+    var color = Utils.getRandomNumber(this.colorMin, this.colorMax);
+
+    System.add('Particle', {
+      location: new Vector(this.parent.location.x, this.parent.location.y),
+      acceleration: accel,
+      width: 0,
+      height: 0,
+      borderWidth: 0,
+      boxShadowBlur: size * 10,
+      boxShadowSpread: size * 3,
+      boxShadowColor: this.pl.getColor(),
+      maxSpeed: maxSpeed,
+      opacity: opacity,
+      lifespan: lifespan
+    });
+
+  }
+};
+
+/**
+ * Configures an instance of Storm.
+ * @param {Object} [opt_options=] A map of options.
+ * @param {Object} [opt_options.parent = null] The storm's parent.
+ * @memberOf Storm
+ */
+Storm.prototype.configure = function(opt_options) {
+  var options = opt_options || {};
+  this.parent = options.parent || null;
+};
+
+module.exports = Storm;
+
+},{"burner":2,"colorpalette":5,"drawing-utils-lib":6,"vector2d-lib":9}],21:[function(_dereq_,module,exports){
 var Burner = _dereq_('burner');
-var Mover = _dereq_('./mover');
-var Oscillator = _dereq_('./oscillator');
-var Particle = _dereq_('./particle');
+var Mover = _dereq_('./items/mover');
+var Oscillator = _dereq_('./items/oscillator');
+var Particle = _dereq_('./items/particle');
 var Utils = _dereq_('drawing-utils-lib');
 var Vector = _dereq_('vector2d-lib');
 var SimplexNoise = _dereq_('quietriot');
 var Easing = _dereq_('./easing');
+var Mask = _dereq_('./mask');
 
-function Vortex(base, spine, shell) {
+/**
+ * Creates a new Vortex.
+ * @param {Object} base A map of properties describing the base of the tornado.
+ * @param {Object} storm A map of properties describing the storm at the base of the tornado.
+ * @param {Object} spine A map of properties describing the tornado's spine.
+ * @param {Object} shell A map of properties describing the tornado's shell (funnel).
+ * @constructor
+ */
+function Vortex(base, storm, spine, shell) {
   this.base = base;
+  this.storm = storm;
   this.spine = spine;
   this.shell = shell;
 }
@@ -2870,13 +3127,13 @@ Vortex.noise = 0;
 
 /**
  * Initializes an instance of Vortex.
- * @param {Object} [opt_world_options=] A map of initial world properties.
- * @param {Object} [opt_world_options.el = document.body] World's DOM object.
- * @param {number} [opt_world_options.width = 800] World width in pixels.
- * @param {number} [opt_world_options.height = 600] World height in pixels.
- * @param {number} [opt_world_options.borderWidth = 1] World border widthin pixels.
- * @param {string} [opt_world_options.borderStyle = 'solid'] World border style.
- * @param {Object} [opt_world_options.borderColor = 0, 0, 0] World border color.
+ * @param {Object} [opt_options=] A map of initial world properties.
+ * @param {Object} [opt_options.el = document.body] World's DOM object.
+ * @param {number} [opt_options.width = 800] World width in pixels.
+ * @param {number} [opt_options.height = 600] World height in pixels.
+ * @param {number} [opt_options.borderWidth = 1] World border widthin pixels.
+ * @param {string} [opt_options.borderStyle = 'solid'] World border style.
+ * @param {Object} [opt_options.borderColor = 0, 0, 0] World border color.
  * @memberof Vortex
  */
 Vortex.prototype.init = function(opt_options) {
@@ -2916,6 +3173,12 @@ Vortex.prototype._setupCallback = function(options) {
   // BASE
   this.base.configure(world);
   var myBase = Burner.System.add('Oscillator', this.base);
+
+  // STORM
+  this.storm.configure({
+    parent: myBase
+  });
+  Burner.System.add('Mover', this.storm);
 
   // SPINE
   for (var i = 0, max = Math.floor(world.height / this.spine.density); i < max; i++) {
@@ -2957,6 +3220,46 @@ Vortex.prototype._setupCallback = function(options) {
       acceleration: new Vector(1 / (i + 1), 0)
     });
   }
+
+  // MASKS
+  var maskWidth = (document.body.scrollWidth - world.width) / 2,
+    maskHeight = (document.body.scrollHeight - world.height) / 2;
+
+  var maskTop = new Mask();
+  maskTop.configure({
+    location: new Vector(world.width/2, -1 - maskHeight / 2),
+    world: world,
+    width: world.width + 10,
+    height: maskHeight
+  });
+  Burner.System.add('Mover', maskTop);
+
+  var maskBottom = new Mask();
+  maskBottom.configure({
+    location: new Burner.Vector(world.width/2, world.height + 1 + maskHeight / 2),
+    world: world,
+    width: world.width + 10,
+    height: maskHeight
+  });
+  Burner.System.add('Mover', maskBottom);
+
+  var maskLeft = new Mask();
+  maskLeft.configure({
+    location: new Burner.Vector(-1 - maskWidth / 2, world.height / 2),
+    world: world,
+    width: maskWidth,
+    height: document.body.scrollHeight
+  });
+  Burner.System.add('Mover', maskLeft);
+
+  var maskRight = new Mask();
+  maskRight.configure({
+    location: new Burner.Vector(world.width + 1 + maskWidth / 2, world.height / 2),
+    world: world,
+    width: maskWidth,
+    height: document.body.scrollHeight
+  });
+  Burner.System.add('Mover', maskRight);
 };
 
 /**
@@ -2979,6 +3282,7 @@ Vortex.prototype._getNoise = function() {
 };
 
 module.exports = Vortex;
-},{"./easing":11,"./mover":13,"./oscillator":14,"./particle":15,"burner":2,"drawing-utils-lib":5,"quietriot":7,"vector2d-lib":8}]},{},[12])
-(12)
+
+},{"./easing":11,"./items/mover":13,"./items/oscillator":14,"./items/particle":15,"./mask":17,"burner":2,"drawing-utils-lib":6,"quietriot":8,"vector2d-lib":9}]},{},[16])
+(16)
 });

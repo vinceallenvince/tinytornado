@@ -1,14 +1,24 @@
 var Burner = require('burner');
-var Mover = require('./mover');
-var Oscillator = require('./oscillator');
-var Particle = require('./particle');
+var Mover = require('./items/mover');
+var Oscillator = require('./items/oscillator');
+var Particle = require('./items/particle');
 var Utils = require('drawing-utils-lib');
 var Vector = require('vector2d-lib');
 var SimplexNoise = require('quietriot');
 var Easing = require('./easing');
+var Mask = require('./mask');
 
-function Vortex(base, spine, shell) {
+/**
+ * Creates a new Vortex.
+ * @param {Object} base A map of properties describing the base of the tornado.
+ * @param {Object} storm A map of properties describing the storm at the base of the tornado.
+ * @param {Object} spine A map of properties describing the tornado's spine.
+ * @param {Object} shell A map of properties describing the tornado's shell (funnel).
+ * @constructor
+ */
+function Vortex(base, storm, spine, shell) {
   this.base = base;
+  this.storm = storm;
   this.spine = spine;
   this.shell = shell;
 }
@@ -22,13 +32,13 @@ Vortex.noise = 0;
 
 /**
  * Initializes an instance of Vortex.
- * @param {Object} [opt_world_options=] A map of initial world properties.
- * @param {Object} [opt_world_options.el = document.body] World's DOM object.
- * @param {number} [opt_world_options.width = 800] World width in pixels.
- * @param {number} [opt_world_options.height = 600] World height in pixels.
- * @param {number} [opt_world_options.borderWidth = 1] World border widthin pixels.
- * @param {string} [opt_world_options.borderStyle = 'solid'] World border style.
- * @param {Object} [opt_world_options.borderColor = 0, 0, 0] World border color.
+ * @param {Object} [opt_options=] A map of initial world properties.
+ * @param {Object} [opt_options.el = document.body] World's DOM object.
+ * @param {number} [opt_options.width = 800] World width in pixels.
+ * @param {number} [opt_options.height = 600] World height in pixels.
+ * @param {number} [opt_options.borderWidth = 1] World border widthin pixels.
+ * @param {string} [opt_options.borderStyle = 'solid'] World border style.
+ * @param {Object} [opt_options.borderColor = 0, 0, 0] World border color.
  * @memberof Vortex
  */
 Vortex.prototype.init = function(opt_options) {
@@ -68,6 +78,12 @@ Vortex.prototype._setupCallback = function(options) {
   // BASE
   this.base.configure(world);
   var myBase = Burner.System.add('Oscillator', this.base);
+
+  // STORM
+  this.storm.configure({
+    parent: myBase
+  });
+  Burner.System.add('Mover', this.storm);
 
   // SPINE
   for (var i = 0, max = Math.floor(world.height / this.spine.density); i < max; i++) {
@@ -109,6 +125,46 @@ Vortex.prototype._setupCallback = function(options) {
       acceleration: new Vector(1 / (i + 1), 0)
     });
   }
+
+  // MASKS
+  var maskWidth = (document.body.scrollWidth - world.width) / 2,
+    maskHeight = (document.body.scrollHeight - world.height) / 2;
+
+  var maskTop = new Mask();
+  maskTop.configure({
+    location: new Vector(world.width/2, -1 - maskHeight / 2),
+    world: world,
+    width: world.width + 10,
+    height: maskHeight
+  });
+  Burner.System.add('Mover', maskTop);
+
+  var maskBottom = new Mask();
+  maskBottom.configure({
+    location: new Burner.Vector(world.width/2, world.height + 1 + maskHeight / 2),
+    world: world,
+    width: world.width + 10,
+    height: maskHeight
+  });
+  Burner.System.add('Mover', maskBottom);
+
+  var maskLeft = new Mask();
+  maskLeft.configure({
+    location: new Burner.Vector(-1 - maskWidth / 2, world.height / 2),
+    world: world,
+    width: maskWidth,
+    height: document.body.scrollHeight
+  });
+  Burner.System.add('Mover', maskLeft);
+
+  var maskRight = new Mask();
+  maskRight.configure({
+    location: new Burner.Vector(world.width + 1 + maskWidth / 2, world.height / 2),
+    world: world,
+    width: maskWidth,
+    height: document.body.scrollHeight
+  });
+  Burner.System.add('Mover', maskRight);
 };
 
 /**

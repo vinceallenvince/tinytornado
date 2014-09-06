@@ -9,6 +9,7 @@
  * @param {string} [opt_options.easing = 'easeInExpo'] An easing function to determine shell shape along the spine. See Easing docs for possible values.
  * @param {number} [opt_options.colorMin = 50] Minimum color. Valid values bw 0 - 255.
  * @param {number} [opt_options.colorMax = 255] Maximum color. Valid values bw 0 - 255.
+ * @constructor
  */
 function Shell(opt_options) {
 
