@@ -3197,7 +3197,7 @@ Vortex.prototype._setupCallback = function(options) {
 
     // use Perlin noise to generate the parent node's offset from the funnel's y-axis
     // use easing so the effect is amplified
-    joint.offsetFromCenter = Math.easeInSine(i, 0, 1, max - 1) *
+    joint.offsetFromCenter = Easing.easeInSine(i, 0, 1, max - 1) *
         SimplexNoise.noise(i * 0.1, 0) * 20;
 
     // pillows
