@@ -22,12 +22,12 @@ function StormBit(opt_options) {
 
   var options = opt_options || {};
 
-  this.sizeMin = typeof options.sizeMin !== 'undefined' ? options.sizeMin : 0.1;
-  this.sizeMax = typeof options.sizeMax !== 'undefined' ? options.sizeMax : 1;
+  this.sizeMin = typeof options.sizeMin !== 'undefined' ? options.sizeMin : 1;
+  this.sizeMax = typeof options.sizeMax !== 'undefined' ? options.sizeMax : 2;
   this.speedMin = typeof options.speedMin !== 'undefined' ? options.speedMin : 1;
-  this.speedMax = typeof options.speedMax !== 'undefined' ? options.speedMax : 10;
-  this.opacityMin = typeof options.opacityMin !== 'undefined' ? options.opacityMin : 0.3;
-  this.opacityMax = typeof options.opacityMax !== 'undefined' ? options.opacityMax : 1;
+  this.speedMax = typeof options.speedMax !== 'undefined' ? options.speedMax : 30;
+  this.opacityMin = typeof options.opacityMin !== 'undefined' ? options.opacityMin : 0.05;
+  this.opacityMax = typeof options.opacityMax !== 'undefined' ? options.opacityMax : 0.3;
   this.lifespanMin = typeof options.lifespanMin !== 'undefined' ? options.lifespanMin : 70;
   this.lifespanMax = typeof options.lifespanMax !== 'undefined' ? options.lifespanMax : 120;
   this.colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 100;
@@ -61,11 +61,11 @@ StormBit.prototype._beforeStep = function() {
 
   //if ((System.clock % this.rate) === 0) {
 
-    for (var i = 0; i < 2; i++) {
+    for (var i = 0; i < 1; i++) {
 
       var accel = new Vector(1, 1);
       accel.normalize();
-      accel.mult(Utils.getRandomNumber(0.01, 0.1, true));
+      accel.mult(Utils.getRandomNumber(0.1, 0.25, true));
       accel.rotate(Utils.degreesToRadians(Utils.getRandomNumber(140, 310, true)));
       this.acceleration = accel;
 
@@ -79,7 +79,7 @@ StormBit.prototype._beforeStep = function() {
         location: new Vector(this.parent.location.x, this.parent.location.y),
         acceleration: accel,
         scale: size,
-        maxSpeed: 0.15,
+        maxSpeed: maxSpeed,
         opacity: opacity,
         fade: this.fade,
         lifespan: lifespan

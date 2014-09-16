@@ -15,11 +15,12 @@ function Shell(opt_options) {
 
   var options = opt_options || {};
 
-  this.minScale = typeof options.minScale !== 'undefined' ? options.minScale : 0.3;
+  this.minScale = typeof options.minScale !== 'undefined' ? options.minScale : 0.1;
+  this.maxScale = typeof options.maxScale !== 'undefined' ? options.maxScale : 8;
   this.opacity = typeof options.opacity !== 'undefined' ? options.opacity : 0.75;
   this.blur = typeof options.blur !== 'undefined' ? options.blur : 30;
   this.easing = options.easing || 'easeInExpo';
-  this.colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 50;
+  this.colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 100;
   this.colorMax = typeof options.colorMax !== 'undefined' ? options.colorMax : 255;
 }
 

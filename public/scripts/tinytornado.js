@@ -1,4 +1,354 @@
 !function(e){if("object"==typeof exports)module.exports=e();else if("function"==typeof define&&define.amd)define(e);else{var n;"undefined"!=typeof window?n=window:"undefined"!=typeof global?n=global:"undefined"!=typeof self&&(n=self),n.TinyTornado=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
+var BitShadowItems = {
+  Mover: _dereq_('./mover'),
+  Oscillator: _dereq_('./oscillator'),
+  Particle: _dereq_('./particle')
+};
+
+// TODO: add...
+//Agent: require('./agent'),
+//Attractor: require('./attractor'),
+//Connector: require('./connector'),
+//Dragger: require('./dragger'),
+//FlowField: require('./flowfield'),
+//ParticleSystem: require('./particlesystem'),
+//Point: require('./point'),
+//RangeDisplay: require('./rangedisplay'),
+//Repeller: require('./repeller'),
+//Sensor: require('./sensor'),
+//Stimulus: require('./stimulus'),
+//Walker: require('./walker')
+
+module.exports = BitShadowItems;
+
+},{"./mover":2,"./oscillator":3,"./particle":4}],2:[function(_dereq_,module,exports){
+var Item = _dereq_('bitshadowmachine').Item,
+    System = _dereq_('bitshadowmachine').System,
+    Utils = _dereq_('bitshadowmachine').Utils,
+    Vector = _dereq_('bitshadowmachine').Vector;
+
+/**
+ * Creates a new Mover.
+ *
+ * Movers are the root object for any item that moves. They are not
+ * aware of other Movers or stimuli. They have no means of locomotion
+ * and change only due to external forces. You will never directly
+ * implement Mover.
+ *
+ * @constructor
+ * @extends Item
+ */
+function Mover() {
+  Item.call(this);
+}
+Utils.extend(Mover, Item);
+
+/**
+ * Initializes an instance of Mover.
+ * @param  {Object} world An instance of World.
+ * @param  {Object} opt_options A map of initial properties.
+ * @param {string|Array} [opt_options.color = 255, 255, 255] Color.
+ * @param {number} [opt_options.borderRadius = 100] Border radius.
+ * @param {number} [opt_options.borderWidth = 2] Border width.
+ * @param {string} [opt_options.borderStyle = 'solid'] Border style.
+ * @param {Array} [opt_options.borderColor = 60, 60, 60] Border color.
+ * @param {boolean} [opt_options.pointToDirection = true] If true, object will point in the direction it's moving.
+ * @param {Object} [opt_options.parent = null] A parent object. If set, object will be fixed to the parent relative to an offset distance.
+ * @param {boolean} [opt_options.pointToParentDirection = true] If true, object points in the direction of the parent's velocity.
+ * @param {number} [opt_options.offsetDistance = 30] The distance from the center of the object's parent.
+ * @param {number} [opt_options.offsetAngle = 0] The rotation around the center of the object's parent.
+ * @param {function} [opt_options.afterStep = null] A function to run after the step() function.
+ * @param {function} [opt_options.isStatic = false] Set to true to prevent object from moving.
+ * @param {Object} [opt_options.parent = null] Attach to another Flora object.
+ */
+Mover.prototype.init = function(world, opt_options) {
+  Mover._superClass.init.call(this, world, opt_options);
+
+  var options = opt_options || {};
+
+  this.color = options.color || [255, 255, 255];
+  this.borderRadius = options.borderRadius || 0;
+  this.borderWidth = options.borderWidth || 0;
+  this.borderStyle = options.borderStyle || 'none';
+  this.borderColor = options.borderColor || [0, 0, 0];
+  this.pointToDirection = typeof options.pointToDirection === 'undefined' ? true : options.pointToDirection;
+  this.parent = options.parent || null;
+  this.pointToParentDirection = typeof options.pointToParentDirection === 'undefined' ? true : options.pointToParentDirection;
+  this.offsetDistance = typeof options.offsetDistance === 'undefined' ? 0 : options.offsetDistance;
+  this.offsetAngle = options.offsetAngle || 0;
+  this.isStatic = !!options.isStatic;
+
+  this._friction = new Vector();
+};
+
+Mover.prototype.step = function() {
+
+  var i, max, x = this.location.x,
+      y = this.location.y;
+
+  this.beforeStep.call(this);
+
+  if (this.isStatic) {
+    return;
+  }
+
+  // start apply forces
+
+  if (this.world.c) { // friction
+    this._friction.x = this.velocity.x;
+    this._friction.y = this.velocity.y;
+    this._friction.mult(-1);
+    this._friction.normalize();
+    this._friction.mult(this.world.c);
+    this.applyForce(this._friction);
+  }
+  this.applyForce(this.world.gravity); // gravity
+
+  // attractors
+  var attractors = System.getAllItemsByName('Attractor');
+  for (i = 0, max = attractors.length; i < max; i += 1) {
+    if (this.id !== attractors[i].id) {
+      this.applyForce(attractors[i].attract(this));
+    }
+  }
+
+  // repellers
+  var repellers = System.getAllItemsByName('Repeller');
+  for (i = 0, max = repellers.length; i < max; i += 1) {
+    if (this.id !== repellers[i].id) {
+      this.applyForce(repellers[i].attract(this));
+    }
+  }
+
+  // draggers
+  var draggers = System.getAllItemsByName('Dragger');
+  for (i = 0, max = draggers.length; i < max; i += 1) {
+    if (this.id !== draggers[i].id && Utils.isInside(this, draggers[i])) {
+      this.applyForce(draggers[i].drag(this));
+    }
+  }
+
+  if (this.applyAdditionalForces) {
+    this.applyAdditionalForces.call(this);
+  }
+
+  this.velocity.add(this.acceleration); // add acceleration
+
+  this.velocity.limit(this.maxSpeed, this.minSpeed);
+
+  this.location.add(this.velocity); // add velocity
+
+  if (this.pointToDirection) { // object rotates toward direction
+    if (this.velocity.mag() > 0.1) {
+      this.angle = Utils.radiansToDegrees(Math.atan2(this.velocity.y, this.velocity.x));
+    }
+  }
+
+  if (this.wrapWorldEdges) {
+    this._wrapWorldEdges();
+  } else if (this.checkWorldEdges) {
+    this._checkWorldEdges();
+  }
+
+  if (this.controlCamera) {
+    this._checkCameraEdges(x, y, this.location.x, this.location.y);
+  }
+
+  if (this.parent) { // parenting
+
+    if (this.offsetDistance) {
+
+      r = this.offsetDistance; // use angle to calculate x, y
+      theta = Utils.degreesToRadians(this.parent.angle + this.offsetAngle);
+      x = r * Math.cos(theta);
+      y = r * Math.sin(theta);
+
+      this.location.x = this.parent.location.x;
+      this.location.y = this.parent.location.y;
+      this.location.add(new Vector(x, y)); // position the child
+
+      if (this.pointToParentDirection) {
+        this.angle = Utils.radiansToDegrees(Math.atan2(this.parent.velocity.y, this.parent.velocity.x));
+      }
+
+    } else {
+      this.location.x = this.parent.location.x;
+      this.location.y = this.parent.location.y;
+    }
+  }
+
+  this.acceleration.mult(0);
+
+  if (this.life < this.lifespan) {
+    this.life += 1;
+  } else if (this.lifespan !== -1) {
+    System.remove(this);
+    return;
+  }
+
+  this.afterStep.call(this);
+};
+
+module.exports = Mover;
+
+},{"bitshadowmachine":9}],3:[function(_dereq_,module,exports){
+var Item = _dereq_('bitshadowmachine').Item,
+    SimplexNoise = _dereq_('quietriot'),
+    System = _dereq_('bitshadowmachine').System,
+    Utils = _dereq_('bitshadowmachine').Utils,
+    Vector = _dereq_('bitshadowmachine').Vector;
+
+function Oscillator(opt_options) {
+  Item.call(this);
+}
+Utils.extend(Oscillator, Item);
+
+Oscillator.prototype.init = function(world, opt_options) {
+  Oscillator._superClass.init.call(this, world, opt_options);
+
+  var options = opt_options || {};
+
+  this.acceleration = options.acceleration || new Vector(0.01, 0);
+  this.aVelocity = options.aVelocity || new Vector();
+  this.isStatic = !!options.isStatic;
+  this.perlin = !!options.perlin;
+  this.perlinSpeed = typeof options.perlinSpeed === 'undefined' ? 0.005 : options.perlinSpeed;
+  this.perlinTime = options.perlinTime || 0;
+  this.perlinAccelLow = typeof options.perlinAccelLow === 'undefined' ? -2 : options.perlinAccelLow;
+  this.perlinAccelHigh = typeof options.perlinAccelHigh === 'undefined' ? 2 : options.perlinAccelHigh;
+  this.perlinOffsetX = typeof options.perlinOffsetX === 'undefined' ? Math.random() * 10000 : options.perlinOffsetX;
+  this.perlinOffsetY = typeof options.perlinOffsetY === 'undefined' ? Math.random() * 10000 : options.perlinOffsetY;
+  this.color = options.color || [200, 100, 0];
+  this.opacity = typeof options.opacity === 'undefined' ? 0.75 : options.opacity;
+  this.zIndex = typeof options.zIndex === 'undefined' ? 1 : options.zIndex;
+  this.parent = options.parent || null;
+  this.pointToDirection = !!options.pointToDirection;
+
+  //
+
+  this.lastLocation = new Vector();
+  this.amplitude = options.amplitude || new Vector(this.world.width / 2,
+      this.world.height / 2);
+  this.initialLocation = options.initialLocation ||
+    new Vector(this.world.width / 2, this.world.height / 2);
+  this.location.x = this.initialLocation.x;
+  this.location.y = this.initialLocation.y;
+};
+
+Oscillator.prototype.step = function () {
+
+  this.beforeStep.call(this);
+
+  if (this.isStatic) {
+    return;
+  }
+
+  if (this.perlin) {
+    this.perlinTime += this.perlinSpeed;
+    this.aVelocity.x =  Utils.map(SimplexNoise.noise(this.perlinTime + this.perlinOffsetX, 0), -1, 1, this.perlinAccelLow, this.perlinAccelHigh);
+    this.aVelocity.y =  Utils.map(SimplexNoise.noise(0, this.perlinTime + this.perlinOffsetY), -1, 1, this.perlinAccelLow, this.perlinAccelHigh);
+  } else {
+    this.aVelocity.add(this.acceleration); // add acceleration
+  }
+
+  if (this.parent) { // parenting
+    this.initialLocation.x = this.parent.location.x;
+    this.initialLocation.y = this.parent.location.y;
+  }
+
+  this.location.x = this.initialLocation.x + Math.cos(this.aVelocity.x) * this.amplitude.x;
+  this.location.y = this.initialLocation.y + Math.sin(this.aVelocity.y) * this.amplitude.y;
+
+  if (this.pointToDirection) { // object rotates toward direction
+      velDiff = Vector.VectorSub(this.location, this.lastLocation);
+      this.angle = Utils.radiansToDegrees(Math.atan2(velDiff.y, velDiff.x));
+  }
+
+  if (this.life < this.lifespan) {
+    this.life += 1;
+  } else if (this.lifespan !== -1) {
+    System.remove(this);
+  }
+
+  this.afterStep.call(this);
+
+  this.lastLocation.x = this.location.x;
+  this.lastLocation.y = this.location.y;
+};
+
+module.exports = Oscillator;
+
+},{"bitshadowmachine":9,"quietriot":19}],4:[function(_dereq_,module,exports){
+var Item = _dereq_('bitshadowmachine').Item,
+    Mover = _dereq_('./mover'),
+    Utils = _dereq_('bitshadowmachine').Utils,
+    Vector = _dereq_('bitshadowmachine').Vector;
+
+/**
+ * Creates a new Particle object.
+ *
+ * @constructor
+ * @extends Mover
+ */
+function Particle(opt_options) {
+  Mover.call(this);
+}
+Utils.extend(Particle, Mover);
+
+/**
+ * Initializes Particle.
+ * @param  {Object} world An instance of World.
+ * @param  {Object} [opt_options=] A map of initial properties.
+ * @param {Array} [opt_options.color = [200, 200, 200]] Color.
+ * @param {number} [opt_options.lifespan = 50] The max life of the object. Set to -1 for infinite life.
+ * @param {number} [opt_options.life = 0] The current life value. If greater than this.lifespan, object is destroyed.
+ * @param {boolean} {opt_options.fade = true} If true, opacity decreases proportionally with life.
+ * @param {boolean} {opt_options.shrink = true} If true, width and height decrease proportionally with life.
+ * @param {boolean} [opt_options.checkWorldEdges = false] Set to true to check the object's location against the world's bounds.
+ * @param {number} [opt_options.maxSpeed = 4] Maximum speed.
+ * @param {number} [opt_options.zIndex = 1] The object's zIndex.
+ */
+Particle.prototype.init = function(world, opt_options) {
+  Particle._superClass.init.call(this, world, opt_options);
+
+  var options = opt_options || {};
+
+  this.color = options.color || [200, 200, 200];
+  this.lifespan = typeof options.lifespan === 'undefined' ? 50 : options.lifespan;
+  this.life = options.life || 0;
+  this.fade = typeof options.fade === 'undefined' ? true : options.fade;
+  this.shrink = typeof options.shrink === 'undefined' ? true : options.shrink;
+  this.checkWorldEdges = !!options.checkWorldEdges;
+  this.maxSpeed = typeof options.maxSpeed === 'undefined' ? 4 : options.maxSpeed;
+  this.zIndex = typeof options.zIndex === 'undefined' ? 1 : options.zIndex;
+
+  if (!options.acceleration) {
+    this.acceleration = new Vector(1, 1);
+    this.acceleration.normalize();
+    this.acceleration.mult(this.maxSpeed ? this.maxSpeed : 3);
+    this.acceleration.rotate(Utils.getRandomNumber(0, Math.PI * 2, true));
+  }
+  if (!options.velocity) {
+    this.velocity = new Vector();
+  }
+  this.initScale = this.scale;
+};
+
+/**
+ * Applies additional forces.
+ */
+Particle.prototype.afterStep = function() {
+  if (this.fade) {
+    this.opacity = Utils.map(this.life, 0, this.lifespan, 1, 0);
+  }
+  if (this.shrink) {
+    this.scale = Utils.map(this.life, 0, this.lifespan, this.initScale, 0);
+  }
+};
+
+module.exports = Particle;
+
+},{"./mover":2,"bitshadowmachine":9}],5:[function(_dereq_,module,exports){
 /*global document, window */
 
 /**
@@ -189,7 +539,1009 @@ FPSDisplay.show = function() {
 
 module.exports = FPSDisplay;
 
-},{}],2:[function(_dereq_,module,exports){
+},{}],6:[function(_dereq_,module,exports){
+var Item = _dereq_('./item');
+var System = _dereq_('./system');
+var Utils = _dereq_('burner').Utils;
+var Vector = _dereq_('burner').Vector;
+
+/**
+ * Creates a new Anim. Use for frame-based animation in a
+ * Bit-Shadow Machine rendering.
+ *
+ * An Anim is a simple hidden point with a 'frames' property
+ * that describes additional Bit-Shadows to position relative
+ * to the Anim's location. An Anim also has an advanceFrame
+ * method that cycles through all entries in the frames property.
+ *
+ * @constructor
+ */
+function Anim() {
+  Item.call(this);
+}
+Utils.extend(Anim, Item);
+
+/**
+ * Initializes the Anim.
+ * @param {Object} [opt_options=] A map of initial properties.
+ * @param {number} [opt_options.scale = 0] Scale. Set to a higher value for debugging.
+ * @param {Array} [opt_options.color = [0, 0, 0]] Color. Set color for debugging if scale > 0.
+ * @param {number} [opt_options.zIndex = 0] zIndex. Set to a higher value to place this pixel on a higher layer.
+ * @param {Object} [opt_options.location = new Vector] Location.
+ * @param {Array} [opt_options.frames = []] The frames to animate.
+ * @param {number} [opt_options.currentFrame = 0] The current animation frame.
+ *
+ * @example The 'frames' property should be formatted like:
+ * var frames = [
+ *   {"items":
+ *     [
+ *       {"x": 9, "y": -30, "color": [255, 255, 255], "opacity": 1, "scale": 1},
+ *       {"x": 17,"y": -30, "color": [255, 255, 255], "opacity": 1, "scale": 1}
+ *     ]
+ *   }
+ * ];
+ */
+Anim.prototype.init = function(world, opt_options) {
+  Anim._superClass.init.call(this, world, opt_options);
+
+  var options = opt_options || {};
+
+  /*
+   * At scale = 0, the origin point will be hidden. Set scale and
+   * color for help w debugging.
+   */
+  this.scale = options.scale || 0;
+  this.color = options.color || [0, 0, 0];
+  this.location = options.location || new Vector(this.world.width / 2, this.world.height / 2);
+
+  this.frames = options.frames || [];
+  this.currentFrame = typeof options.currentFrame !== 'undefined' ? options.currentFrame : 0;
+  this.loop = typeof options.loop !== 'undefined' ? options.loop : true;
+
+  this.frameDuration = options.frameDuration || 3;
+
+  /**
+   * Anim instances must be stored in System._records.list at a lower index
+   * than their associated AnimUnit instance. If System.zSorted = true,
+   * we sort System._records.list by zIndex. Since Anim instances are
+   * invisible (while their AnimUnits are rendered), we can force a negative
+   * zIndex and keep them at the bottom of System._records.list.
+   */
+  this.zIndex = -options.zIndex || -1;
+
+  /**
+   * The internal frame count that is checked against
+   * frameDuration to see if we should advance the frame.
+   * @private
+   */
+  this._frameCount = this.frameDuration;
+
+};
+
+
+/**
+ * Checks internal frame count agaist frameDuration to see if we
+ * should advance the frame.
+ */
+Anim.prototype.step = function() {
+
+  if (this._frameCount < this.frameDuration) {
+    this._frameCount++;
+  } else {
+    this.advanceFrame();
+    this._frameCount = 0;
+  }
+};
+
+/*
+ * Loops thru all entries in the 'frames' property and
+ * creates instances of AnimUnit.
+ */
+Anim.prototype.advanceFrame = function() {
+
+  var i, max, animUnits, item, frame;
+
+  // create new anim pixels
+  if (this.frames.length) {
+    frame = this.frames[this.currentFrame];
+    for (i = 0, max = frame.items.length; i < max; i++) {
+      item = frame.items[i];
+      System.add('AnimUnit', {
+        location: new Vector(this.location.x + item.x, this.location.y + item.y),
+        color: item.color,
+        scale: 1,
+        opacity: item.opacity,
+        parent: this,
+        zIndex: -this.zIndex // reverse the zIndex value so the intended value is passed to the AnimUnit
+      }, this.world);
+    }
+  }
+
+  if (this.currentFrame + 1 < this.frames.length) {
+    this.currentFrame++;
+  } else if (this.loop) {
+    this.currentFrame = 0;
+  }
+};
+
+module.exports = Anim;
+
+
+},{"./item":8,"./system":10,"burner":14}],7:[function(_dereq_,module,exports){
+var Item = _dereq_('./item');
+var System = _dereq_('./system');
+var Utils = _dereq_('burner').Utils;
+
+/**
+ * Creates a new AnimUnit.
+ *
+ * An AnimUnit occupies a location in an animation frame. Typically,
+ * called from Anim and passed a location, scale and color.
+ * @constructor
+ */
+function AnimUnit() {
+  Item.call(this);
+}
+Utils.extend(AnimUnit, Item);
+
+/**
+ * Initializes the AnimUnit.
+ * @param {Object} world A world.
+ * @param {Object} options Initial options.
+ */
+AnimUnit.prototype.init = function(world, options) {
+  if (!options.parent || !options.location) {
+    throw new Error('AnimUnit.init: parent amd location required.');
+  }
+  AnimUnit._superClass.init.call(this, world, options);
+
+  this.parent = options.parent;
+  this.location = options.location;
+  this.scale = options.scale || 1;
+  this.color = options.color || [100, 100, 100];
+  this.zIndex = options.zIndex || 1; // the default value must be > 0
+  this.currentFrame = 0;
+};
+
+/**
+ * Checks if parent Anim is advancing the frame. If so,
+ * this object destoys itself.
+ * @returns {number} Total system records.
+ */
+AnimUnit.prototype.step = function() {
+  if (this.parent._frameCount >= this.parent.frameDuration) {
+    System.remove(this);
+    return System._records.length;
+  }
+};
+
+module.exports = AnimUnit;
+},{"./item":8,"./system":10,"burner":14}],8:[function(_dereq_,module,exports){
+/*global document */
+var Vector = _dereq_('burner').Vector;
+
+/**
+ * Creates a new Item.
+ * @constructor
+ * @param {string} opt_name The item's class name.
+ */
+function Item() {
+  Item._idCount++;
+}
+
+/**
+ * Holds a count of item instances.
+ * @memberof Item
+ * @private
+ */
+Item._idCount = 0;
+
+/**
+ * Resets all properties.
+ * @function init
+ * @memberof Item
+ *
+ * @param {Object} [opt_options=] A map of initial properties.
+ * @param {number} [opt_options.name = 'Item'] The item's name.
+ * @param {number} [opt_options.blur = 0] Blur.
+ * @param {number} [opt_options.scale = 1] Scale.
+ * @param {number} [opt_options.angle = 0] Angle.
+ * @param {Array} [opt_options.colorMode = 'rgb'] Color mode. Possible values are 'rgb' and 'hsl'.
+ * @param {Array} [opt_options.color = 200, 200, 200] Color.
+ * @param {Array} [opt_options.opacity = 1] opacity.
+ * @param {Array} [opt_options.zIndex = 0] zIndex.
+ * @param {number} [opt_options.mass = 10] mass.
+ * @param {Function|Object} [opt_options.acceleration = new Vector()] acceleration.
+ * @param {Function|Object} [opt_options.velocity = new Vector()] velocity.
+ * @param {Function|Object} [opt_options.location = new Vector()] location.
+ * @param {number} [opt_options.maxSpeed = 10] maxSpeed.
+ * @param {number} [opt_options.minSpeed = 0] minSpeed.
+ * @param {bounciness} [opt_options.bounciness = 0] bounciness.
+ * @param {number} [opt_options.life = 0] life.
+ * @param {number} [opt_options.lifespan = -1] lifespan.
+ * @param {boolean} [opt_options.checkWorldEdges = true] Set to true to check for world boundary collisions.
+ * @param {boolean} [opt_options.wrapWorldEdges = false] Set to true to check for world boundary collisions and position item at the opposing boundary.
+ * @param {Function} [opt_options.beforeStep = function() {}] This function will be called at the beginning of the item's step() function.
+ * @param {Function} [opt_options.afterStep = function() {}] This function will be called at the end of the item's step() function.
+ */
+Item.prototype.init = function(world, opt_options) {
+
+  if (!world || typeof world !== 'object') {
+    throw new Error('Item requires an instance of World.');
+  }
+
+  this.world = world;
+
+  var options = opt_options || {};
+
+  this.name = typeof this.name !== 'undefined' ? this.name :
+      options.name || 'Item';
+
+  this.blur = typeof this.blur !== 'undefined' ? this.blur :
+      options.blur || 0;
+
+  this.scale = typeof this.scale !== 'undefined' ? this.scale :
+      typeof options.scale === 'undefined' ? 1 : options.scale;
+
+  this.angle = typeof this.angle !== 'undefined' ? this.angle :
+      options.angle || 0;
+
+  this.colorMode = typeof this.colorMode !== 'undefined' ? this.colorMode :
+      options.colorMode || 'rgb';
+
+  this.color = typeof this.color !== 'undefined' ? this.color :
+      options.color || [200, 200, 200];
+
+  this.opacity = typeof this.opacity !== 'undefined' ? this.opacity :
+      typeof options.opacity === 'undefined' ? 1 : options.opacity;
+
+  this.zIndex = typeof this.zIndex !== 'undefined' ? this.zIndex :
+      options.zIndex || 0;
+
+  //
+
+  this.mass = typeof this.mass !== 'undefined' ? this.mass :
+      typeof options.mass === 'undefined' ? 10 : options.mass;
+
+  this.acceleration = typeof this.acceleration !== 'undefined' ? this.acceleration :
+      options.acceleration || new Vector();
+
+  this.velocity = typeof this.velocity !== 'undefined' ? this.velocity :
+      options.velocity || new Vector();
+
+  this.location = typeof this.location !== 'undefined' ? this.location :
+      options.location || new Vector(this.world.width / 2, this.world.height / 2);
+
+  this.maxSpeed = typeof this.maxSpeed !== 'undefined' ? this.maxSpeed :
+      typeof options.maxSpeed === 'undefined' ? 10 : options.maxSpeed;
+
+  this.minSpeed = typeof this.minSpeed !== 'undefined' ? this.minSpeed :
+      options.minSpeed || 0;
+
+  this.bounciness = typeof this.bounciness !== 'undefined' ? this.bounciness :
+      typeof options.bounciness === 'undefined' ? 0.5 : options.bounciness;
+
+  this.life = typeof this.life !== 'undefined' ? this.life :
+      options.life || 0;
+
+  this.lifespan = typeof this.lifespan !== 'undefined' ? this.lifespan :
+      typeof options.lifespan === 'undefined' ? -1 : options.lifespan;
+
+  this.checkWorldEdges = typeof this.checkWorldEdges !== 'undefined' ? this.checkWorldEdges :
+      typeof options.checkWorldEdges === 'undefined' ? true : options.checkWorldEdges;
+
+  this.wrapWorldEdges = typeof this.wrapWorldEdges !== 'undefined' ? this.wrapWorldEdges :
+      !!options.wrapWorldEdges;
+
+  this.beforeStep = typeof this.beforeStep !== 'undefined' ? this.beforeStep :
+      options.beforeStep || function() {};
+
+  this.afterStep = typeof this.afterStep !== 'undefined' ? this.afterStep :
+      options.afterStep || function() {};
+
+  this._force = this._force || new Vector();
+
+  this.id = this.name + Item._idCount;
+
+};
+
+/**
+ * Applies forces to item.
+ * @function step
+ * @memberof Item
+ */
+Item.prototype.step = function() {
+
+  var x = this.location.x,
+      y = this.location.y;
+
+  this.beforeStep.call(this);
+  this.applyForce(this.world.gravity);
+  this.applyForce(this.world.wind);
+  this.velocity.add(this.acceleration);
+  this.velocity.limit(this.maxSpeed, this.minSpeed);
+  this.location.add(this.velocity);
+  if (this.checkWorldEdges) {
+    this._checkWorldEdges();
+  } else if (this.wrapWorldEdges) {
+    this._wrapWorldEdges();
+  }
+  this.acceleration.mult(0);
+  this.afterStep.call(this);
+};
+
+/**
+ * Adds a force to this object's acceleration.
+ * @function applyForce
+ * @memberof Item
+ * @param {Object} force A Vector representing a force to apply.
+ * @returns {Object} A Vector representing a new acceleration.
+ */
+Item.prototype.applyForce = function(force) {
+  // calculated via F = m * a
+  if (force) {
+    this._force.x = force.x;
+    this._force.y = force.y;
+    this._force.div(this.mass);
+    this.acceleration.add(this._force);
+    return this.acceleration;
+  }
+};
+
+/**
+ * Prevents object from moving beyond world bounds.
+ * @function _checkWorldEdges
+ * @memberof Item
+ * @private
+ */
+Item.prototype._checkWorldEdges = function() {
+
+  if (this.location.y < 0) { // top
+    this.velocity.mult(-this.bounciness);
+    this.location.y = 0;
+    return;
+  }
+
+  if (this.location.x > this.world.width) { // right
+    this.velocity.mult(-this.bounciness);
+    this.location.x = this.world.width;
+    return;
+  }
+
+  if (this.location.y > this.world.height) { // bottom
+    this.velocity.mult(-this.bounciness);
+    this.location.y = this.world.height;
+    return;
+  }
+
+  if (this.location.x < 0) { // left
+    this.velocity.mult(-this.bounciness);
+    this.location.x = 0;
+    return;
+  }
+};
+
+/**
+ * If item moves beyond world bounds, position's object at the opposite boundary.
+ * @function _wrapWorldEdges
+ * @memberof Item
+ * @private
+ */
+Item.prototype._wrapWorldEdges = function() {
+
+  if (this.location.y < 0) { // top
+    this.location.y = this.world.height;
+    return;
+  }
+
+  if (this.location.x > this.world.width) { // right
+    this.location.x = 0;
+    return;
+  }
+
+  if (this.location.y > this.world.height) { // bottom
+    this.location.y = 0;
+    return;
+  }
+
+  if (this.location.x < 0) { // left
+    this.location.x = this.world.width;
+    return;
+  }
+};
+
+module.exports = Item;
+
+},{"burner":14}],9:[function(_dereq_,module,exports){
+var BitShadowMachine = {
+  Anim: _dereq_('./anim'),
+  Item: _dereq_('./item'),
+  SimplexNoise: _dereq_('quietriot'),
+  System: _dereq_('./system'),
+  Vector: _dereq_('burner').Vector,
+  Utils: _dereq_('burner').Utils
+};
+
+BitShadowMachine.System.Classes = {
+  Anim: _dereq_('./anim'),
+  AnimUnit: _dereq_('./animunit')
+};
+
+module.exports = BitShadowMachine;
+},{"./anim":6,"./animunit":7,"./item":8,"./system":10,"burner":14,"quietriot":19}],10:[function(_dereq_,module,exports){
+var Item = _dereq_('./item');
+var FPSDisplay = _dereq_('fpsdisplay');
+var System = _dereq_('burner').System;
+var Utils = _dereq_('burner').Utils;
+var Vector = _dereq_('burner').Vector;
+var World = _dereq_('./world');
+
+/**
+ * Holds additional classes that can be defined at runtime.
+ * @memberof System
+ */
+System.Classes = {
+  'Item': Item
+};
+
+/**
+ * Stores references to all buffers in the system.
+ * @private
+ */
+System._buffers = {};
+
+/**
+ * Set to 1 to sort System._records.list by zIndex.
+ * @type Number
+ */
+System.zSort = 0;
+
+/**
+ * Set to true to save properties defined in System.saveItemProperties from
+ * each object in each frame.
+ * @type boolean
+ */
+System.saveData = false;
+
+/**
+ * Recording starts with this frame number.
+ * @type number
+ */
+System.saveStartFrame = -1;
+
+/**
+ * Recording ends with this frame number.
+ * @type number
+ */
+System.saveEndFrame = -1;
+
+/**
+ * Defines the properties to save in System.data for each item
+ * in each frame.
+ * @type Object
+ */
+System.saveItemProperties = {
+  id: true,
+  name: true,
+  scale: true,
+  location: true,
+  velocity: true,
+  angle: true,
+  minSpeed: true,
+  maxSpeed: true,
+  hue: true,
+  saturation: true,
+  lightness: true,
+  color: true,
+  opacity: true
+};
+
+/**
+ * Defines the properties to save in System.data for each world
+ * in each frame.
+ * @type Object
+ */
+System.saveWorldProperties = {
+  id: true,
+  name: true,
+  width: true,
+  height: true,
+  resolution: true,
+  colorMode: true
+};
+
+/**
+ * Stores properties from each object in each frame.
+ * @type Array
+ * @example
+ [
+    {
+      frame: 0,
+      items: [
+        {},
+        {},
+        ...
+      ]
+    }
+ ]
+ */
+System.data = null;
+
+/**
+ * Returns all worlds.
+ *
+ * @function getAllWorlds
+ * @memberof System
+ * @return {Array.<Buffer>} An array of worlds.
+ */
+System.getAllWorlds = function() {
+  return System.getAllItemsByName('World');
+};
+
+/**
+ * Returns all buffers.
+ *
+ * @function getAllBuffers
+ * @memberof System
+ * @return {Array.<Buffer>} An array of buffers.
+ */
+System.getAllBuffers = function() {
+  return System._buffers;
+};
+
+/**
+ * Adds instances of class to _records and calls init on them.
+ * @function add
+ * @memberof System
+ * @param {string} [opt_klass = 'Item'] The name of the class to add.
+ * @param {Object} [opt_options=] A map of initial properties.
+ * @param {Object} [opt_world = System._records[0]] An instance of World to contain the item.
+ * @returns {Object} An instance of the added item.
+ */
+System.add = function(opt_klass, opt_options, opt_world) {
+
+  var klass = opt_klass || 'Item',
+      options = opt_options || {},
+      world = opt_world || System.firstWorld(),
+      records = this._records, obj;
+
+  // recycle object if one is available; obj must be an instance of the same class
+  for (var i = 0, max = System._pool.length; i < max; i++) {
+    if (System._pool[i].name === klass) {
+      obj = System._cleanObj(System._pool.splice(i, 1)[0]);
+      break;
+    }
+  }
+
+  if (!obj) {
+    if (klass.toLowerCase() === 'world') {
+      obj = new World(options);
+    } else if (System.Classes[klass]) {
+      obj = new System.Classes[klass](options);
+    } else {
+      obj = new Item();
+    }
+  }
+
+  options.name = klass;
+  obj.init(world, options);
+  records.push(obj);
+  return obj;
+};
+
+/**
+ * Iterates over records.
+ * @param {Function} [opt_function=function(){}] A function.
+ * @function loop
+ * @memberof System
+ */
+System.loop = function(opt_function) {
+
+  var i, record, records = System._records,
+      len = System._records.length,
+      frameFunction = opt_function || function() {},
+      worlds = System.getAllWorlds(),
+      buffers = System.getAllBuffers(),
+      shadows = '';
+
+  if (!System.frameFunction) {
+    System.frameFunction = frameFunction;
+  }
+
+  // check if we've exceeded totalFrames
+  if (System.checkFramesSaved()) {
+    return;
+  }
+
+  // setup entry in System.data
+  if (System.saveData) {
+    System.data = System._resetData();
+  }
+
+  for (i = len - 1; i >= 0; i -= 1) {
+
+    record = records[i];
+
+    if (record && record.step && !record.world.pauseStep) {
+
+      if (record.life < record.lifespan) {
+        record.life += 1;
+      } else if (record.lifespan !== -1) {
+        System.remove(record);
+        continue;
+      }
+
+      if (record instanceof World) {
+        System._buffers[record.id] = '';
+      }
+
+      record.step();
+
+      if (System.saveData && record.name !== 'World' && record.opacity) { // we don't want to record World data as Item
+        if (!System._checkSaveFrame()) {
+          continue;
+        }
+        System._saveItemProperties(System.data.items.length, record);
+      }
+    }
+  }
+
+  if (System.zSort) {
+    records = records.sort(function(a,b){return (a.zIndex - b.zIndex);});
+  }
+
+  len = System._records.length; // check length in case items were removed in step()
+
+  // loop thru records and build box shadows
+  for (i = records.length - 1; i >= 0; i -= 1) {
+    record = records[i];
+    if (record.world && record.location && record.opacity && !(record instanceof World)) {
+
+      shadows = buffers[record.world.id];
+
+      if (record.world.colorMode === 'rgb' && record.color) {
+        shadows = shadows + System._buildStringRGBA(record);
+      } else if (record.world.colorMode === 'hsl' && record.color) {
+        shadows = shadows + System._buildStringHSLA(record);
+      } else {
+        throw new Error('System: current color mode not supported.');
+      }
+      buffers[record.world.id] = shadows;
+    }
+  }
+
+  // loop thru worlds and apply box shadow
+  for (i = worlds.length - 1; i >= 0; i -= 1) {
+    world = worlds[i];
+    style = world.el.style;
+    buffer = buffers[world.id];
+    buffers[worlds[i].id] = ''; // clear buffer
+    style.boxShadow = buffer.substr(0, buffer.length - 1); // remove the last comma
+    style.borderRadius = world.borderRadius + '%';
+  }
+
+  // check to call frame complete callback.
+  if (System.saveData) {
+    System.saveDataComplete(System.clock, System.data);
+  }
+  System.clock++;
+  if (FPSDisplay.active) { // TODO: test this
+    FPSDisplay.update(len);
+  }
+  System.frameFunction.call(this);
+  if (typeof window.requestAnimationFrame !== 'undefined') {
+    window.requestAnimationFrame(System.loop);
+  }
+};
+
+/**
+ * Called when frame has completed rendering. You should
+ * override this function with your own handler.
+ * @param {number} frameNumber The current frame number (System.clock).
+ * @param {Object} data The data saved from the current frame.
+ * @throws {Object} If not overridden.
+ */
+System.saveDataComplete = function(frameNumber, data) {
+  throw new Error('System.saveDataComplete not implemented. Override this function.');
+};
+
+/**
+ * Called if saveEndFrame - saveStartFrame exceeds System.clock.
+ */
+System.totalFramesCallback = function() {
+  var totalFrames = System.saveEndFrame - System.saveStartFrame;
+  console.log('Rendered ' + totalFrames + ' frames.');
+};
+
+/**
+ * Checks if the System recorded the total number of frames.
+ * @return {boolean} True if system has recorded the total number of frames.
+ */
+System.checkFramesSaved = function() {
+  var totalFrames = System.saveEndFrame - System.saveStartFrame;
+  if (totalFrames > 0 && System.clock >= System.saveEndFrame) {
+    System.totalFramesCallback();
+    return true;
+  }
+};
+
+/**
+ * Checks if System.clock is within bounds.
+ * @returns {Boolean} True if frame should be recorded.
+ */
+System._checkSaveFrame = function() {
+  if (System.clock >= System.saveStartFrame && System.clock <= System.saveEndFrame) {
+    return true;
+  }
+};
+
+/**
+ * Resets System.data.
+ */
+System._resetData = function() {
+  return {
+    frame: System.clock,
+    world: {},
+    items: []
+  };
+};
+
+/**
+ * Saves properties of the passed record that match properties
+ * defined in System.saveItemProperties.
+ * @param {number} index The array index for this object.
+ * @param {Object} record An Item instance.
+ */
+System._saveItemProperties = function(index, record) {
+
+  for (var i in record) {
+    if (record.hasOwnProperty(i) && System.saveItemProperties[i]) {
+      var val = record[i];
+      if (val instanceof Vector) { // we want to copy the scalar values out of the Vector
+        val = {
+          x: parseFloat(record[i].x.toFixed(2), 10),
+          y: parseFloat(record[i].y.toFixed(2), 10)
+        };
+      }
+      if (typeof val === 'number') {
+        val = parseFloat(val.toFixed(2), 10);
+      }
+      var frame = System.data;
+      var item = frame.items[index];
+      if (typeof item !== 'object') {
+        frame.items[index] = {};
+      }
+      frame.items[index][i] = val;
+    }
+    if (!System.data.world.id) {
+      for (var j in record.world) {
+        if (record.world.hasOwnProperty(j) && System.saveWorldProperties[j]) {
+          System.data.world[j] = record.world[j];
+        }
+      }
+    }
+  }
+};
+
+// TODO: implement step forward function
+/**
+ * Pauses the system and processes one step in records.
+ *
+ * @function _stepForward
+ * @memberof System
+ * @private
+ */
+/*System._stepForward = function() {
+
+  var i, j, max, records = System._records,
+      world, worlds = System.getAllWorlds();
+
+  System.clock++;
+};*/
+
+/**
+ * Builds an hsla box shadow string based on the passed
+ * object's properties.
+ * @private
+ */
+System._buildStringHSLA = function(item) {
+
+    var resolution = item.world.resolution,
+        loc = item.location;
+
+    return (loc.x * resolution) + 'px ' + // left offset
+        (loc.y * resolution) + 'px ' + // right offset
+        item.blur + 'px ' + // blur
+        (resolution * item.scale) + 'px ' + // spread
+        'hsla(' + item.color[0] + ',' + (item.color[1] * 100) + '%,' + (item.color[2] * 100) + '%' + // color
+        ', ' + item.opacity + '),'; // opacity
+};
+
+/**
+ * Builds an rgba box shadow string based on the passed
+ * object's properties.
+ * @private
+ */
+System._buildStringRGBA = function(item) {
+
+    var resolution = item.world.resolution,
+        loc = item.location;
+
+    return (loc.x * resolution) + 'px ' + // left offset
+        (loc.y * resolution) + 'px ' + // right offset
+        item.blur + 'px ' + // blur
+        (resolution * item.scale) + 'px ' + // spread
+        'rgba(' + item.color[0] + ',' + item.color[1] + ',' + item.color[2] + // color
+        ', ' + item.opacity + '),'; // opacity
+};
+
+/**
+ * Handles keyup events.
+ *
+ * @function _keyup
+ * @memberof System
+ * @private
+ * @param {Object} e An event.
+ */
+System._keyup = function(e) {
+
+  var i, max, world, worlds = System.allWorlds();
+
+  switch(e.keyCode) {
+    case 39:
+      //System._stepForward();
+      break;
+    case 80: // p; pause/play
+      for (i = 0, max = worlds.length; i < max; i++) {
+        world = worlds[i];
+        world.pauseStep = !world.pauseStep;
+      }
+      break;
+    case 82: // r; reset
+      System._resetSystem();
+      break;
+    case 83: // s; reset
+      System._toggleStats();
+      break;
+  }
+};
+
+/**
+ * Toggles stats display.
+ *
+ * @function _toggleStats
+ * @memberof System
+ * @private
+ */
+System._toggleStats = function() {
+
+  if (!FPSDisplay.fps) {
+    FPSDisplay.init();
+  } else {
+    FPSDisplay.active = !FPSDisplay.active;
+  }
+
+  if (!FPSDisplay.active) {
+    FPSDisplay.hide();
+  } else {
+    FPSDisplay.show();
+  }
+};
+
+/**
+ * Resets the system.
+ *
+ * @function _resetSystem
+ * @memberof System
+ * @private
+ */
+System._resetSystem = function() {
+
+  var i, max, worlds = System.allWorlds();
+
+  for (i = 0, max = worlds.length; i < max; i++) {
+    worlds[i].pauseStep = false;
+  }
+
+  System._records = [];
+  System._pool = [];
+  System.clock = 0;
+  System.setup(System.setupFunc);
+};
+
+module.exports = System;
+
+},{"./item":8,"./world":11,"burner":14,"fpsdisplay":5}],11:[function(_dereq_,module,exports){
+var Item = _dereq_('./item');
+var Utils = _dereq_('burner').Utils;
+var Vector = _dereq_('burner').Vector;
+
+/**
+ * Creates a new World.
+ *
+ * @constructor
+ */
+function World() {
+  Item.call(this);
+  this.name = 'World';
+  /**
+   * Worlds do not have worlds. However, assigning an
+   * object literal makes for less conditions in the
+   * update loop.
+   */
+  this.world = {};
+}
+Utils.extend(World, Item);
+
+/**
+ * Resets all properties.
+ * @function init
+ * @memberof Item
+ *
+ * @param {Object} world A world.
+ * @param {Object} [opt_options=] A map of initial properties.
+ */
+World.prototype.init = function(world, opt_options) {
+
+  World._superClass.init.call(this, this.world, opt_options);
+
+  var options = opt_options || {},
+      viewportSize = Utils.getWindowSize();
+
+
+  this.el = options.el || document.body;
+  this.gravity = options.gravity || new Vector(0, 0.1);
+  this.c = typeof options.c !== 'undefined' ? options.c : 0.1;
+  this.pauseStep = !!options.pauseStep;
+  this.pauseDraw = !!options.pauseDraw;
+  this.el.className = this.name.toLowerCase();
+
+  //
+
+  this.resolution = options.resolution || 4;
+  this.width = options.width / this.resolution || viewportSize.width / this.resolution;
+  this.height = options.height / this.resolution || viewportSize.height / this.resolution;
+  this.location = options.location || new Vector(((viewportSize.width - (this.width * this.resolution)) / 2),
+      ((viewportSize.height - (this.height * this.resolution)) / 2));
+
+  this.color = options.color || [0, 0, 0];
+
+  //
+
+  if (this.el !== document.body) {
+
+    var container = document.createElement('div'),
+        style = container.style;
+
+    container.id = 'container_' + this.name.toLowerCase();
+    container.className = 'worldContainer';
+    style.left = this.location.x + 'px';
+    style.top = this.location.y + 'px';
+    style.width = this.width * this.resolution + 'px';
+    style.height = this.height * this.resolution + 'px';
+    style.zIndex = this.zIndex;
+    style.backgroundColor = this.colorMode === 'rgb' ?
+        'rgba(' + this.color[0] + ', ' + this.color[1] + ', ' + this.color[2] + ', ' + this.opacity + ')' :
+        'hsla(' + this.color[0] + ', ' + (this.color[1] * 100) + '%, ' + (this.color[2] * 100) + '%, ' + this.opacity + ')';
+
+    container.appendChild(this.el);
+
+    document.body.appendChild(container);
+  }
+};
+
+/**
+ * A noop.
+ * @function step
+ * @memberof World
+ */
+World.prototype.step = function() {};
+
+module.exports = World;
+
+},{"./item":8,"burner":14}],12:[function(_dereq_,module,exports){
+module.exports=_dereq_(5)
+},{}],13:[function(_dereq_,module,exports){
 /*global document */
 
 var Vector = _dereq_('vector2d-lib');
@@ -535,7 +1887,7 @@ Item.prototype.getCSSText = function(props) {
 
 module.exports = Item;
 
-},{"vector2d-lib":9}],3:[function(_dereq_,module,exports){
+},{"vector2d-lib":20}],14:[function(_dereq_,module,exports){
 module.exports = {
   Item: _dereq_('./item'),
   System: _dereq_('./system'),
@@ -544,7 +1896,7 @@ module.exports = {
   World: _dereq_('./world')
 };
 
-},{"./item":2,"./system":4,"./world":5,"drawing-utils-lib":7,"vector2d-lib":9}],4:[function(_dereq_,module,exports){
+},{"./item":13,"./system":15,"./world":16,"drawing-utils-lib":18,"vector2d-lib":20}],15:[function(_dereq_,module,exports){
 /*global window, document */
 /*jshint supernew:true */
 
@@ -1042,7 +2394,7 @@ System._toggleFPS = function() {
 
 module.exports = System;
 
-},{"./item":2,"./world":5,"drawing-utils-lib":7,"fpsdisplay":1,"vector2d-lib":9}],5:[function(_dereq_,module,exports){
+},{"./item":13,"./world":16,"drawing-utils-lib":18,"fpsdisplay":12,"vector2d-lib":20}],16:[function(_dereq_,module,exports){
 var Vector = _dereq_('vector2d-lib'),
     Item = _dereq_('./item'),
     Utils = _dereq_('drawing-utils-lib');
@@ -1158,7 +2510,7 @@ World.prototype.getCSSText = function(props) {
 
 module.exports = World;
 
-},{"./item":2,"drawing-utils-lib":7,"vector2d-lib":9}],6:[function(_dereq_,module,exports){
+},{"./item":13,"drawing-utils-lib":18,"vector2d-lib":20}],17:[function(_dereq_,module,exports){
 var Utils = _dereq_('drawing-utils-lib');
 /**
  * Creates a new ColorPalette object.
@@ -1322,7 +2674,7 @@ ColorPalette.prototype.getColor = function() {
 
 module.exports = ColorPalette;
 
-},{"drawing-utils-lib":7}],7:[function(_dereq_,module,exports){
+},{"drawing-utils-lib":18}],18:[function(_dereq_,module,exports){
 /*jshint supernew:true */
 /** @namespace */
 var Utils = {
@@ -1522,7 +2874,7 @@ Utils.capitalizeFirstLetter = function(string) {
 };
 
 module.exports = Utils;
-},{}],8:[function(_dereq_,module,exports){
+},{}],19:[function(_dereq_,module,exports){
 /*jshint bitwise:false */
 /**
 * https://gist.github.com/304522
@@ -1653,7 +3005,7 @@ SimplexNoise.dot = function(g, x, y) {
 
 module.exports = SimplexNoise;
 
-},{}],9:[function(_dereq_,module,exports){
+},{}],20:[function(_dereq_,module,exports){
 /*global exports, Vector */
 /*jshint supernew:true */
 
@@ -1908,7 +3260,7 @@ Vector.prototype.dot = function(vector) {
 };
 
 module.exports = Vector;
-},{}],10:[function(_dereq_,module,exports){
+},{}],21:[function(_dereq_,module,exports){
 var Burner = _dereq_('burner');
 var Utils = _dereq_('burner').Utils;
 var Vector = _dereq_('burner').Vector;
@@ -1955,7 +3307,7 @@ Base.prototype.configure = function(world) {
 
 module.exports = Base;
 
-},{"burner":3}],11:[function(_dereq_,module,exports){
+},{"burner":14}],22:[function(_dereq_,module,exports){
 /**
  * Robert Penner's easing functions. http://gizma.com/easing/
  * @namespace
@@ -2260,688 +3612,19 @@ Easing.easeInOutCirc = function (t, b, c, d) {
 
 module.exports = Easing;
 
-},{}],12:[function(_dereq_,module,exports){
-var Item = _dereq_('burner').Item,
-    System = _dereq_('burner').System,
-    Utils = _dereq_('burner').Utils,
-    Vector = _dereq_('burner').Vector;
-
-/**
- * Creates a new Mover.
- *
- * Movers are the root object for any item that moves. They are not
- * aware of other Movers or stimuli. They have no means of locomotion
- * and change only due to external forces. You will never directly
- * implement Mover.
- *
- * @constructor
- * @extends Item
- */
-function Mover(opt_options) {
-  Item.call(this);
-}
-Utils.extend(Mover, Item);
-
-/**
- * Initializes an instance of Mover.
- * @param  {Object} world An instance of World.
- * @param  {Object} opt_options A map of initial properties.
- * @param {string|Array} [opt_options.color = 255, 255, 255] Color.
- * @param {number} [opt_options.borderRadius = 100] Border radius.
- * @param {number} [opt_options.borderWidth = 2] Border width.
- * @param {string} [opt_options.borderStyle = 'solid'] Border style.
- * @param {Array} [opt_options.borderColor = 60, 60, 60] Border color.
- * @param {boolean} [opt_options.pointToDirection = true] If true, object will point in the direction it's moving.
- * @param {boolean} [opt_options.draggable = false] If true, object can move via drag and drop.
- * @param {Object} [opt_options.parent = null] A parent object. If set, object will be fixed to the parent relative to an offset distance.
- * @param {boolean} [opt_options.pointToParentDirection = true] If true, object points in the direction of the parent's velocity.
- * @param {number} [opt_options.offsetDistance = 30] The distance from the center of the object's parent.
- * @param {number} [opt_options.offsetAngle = 0] The rotation around the center of the object's parent.
- * @param {function} [opt_options.afterStep = null] A function to run after the step() function.
- * @param {function} [opt_options.isStatic = false] Set to true to prevent object from moving.
- * @param {Object} [opt_options.parent = null] Attach to another Flora object.
- */
-Mover.prototype.init = function(world, opt_options) {
-  Mover._superClass.init.call(this, world, opt_options);
-
-  var options = opt_options || {};
-
-  this.color = options.color || [255, 255, 255];
-  this.borderRadius = options.borderRadius || 0;
-  this.borderWidth = options.borderWidth || 0;
-  this.borderStyle = options.borderStyle || 'none';
-  this.borderColor = options.borderColor || [0, 0, 0];
-  this.pointToDirection = typeof options.pointToDirection === 'undefined' ? true : options.pointToDirection;
-  this.draggable = !!options.draggable;
-  this.parent = options.parent || null;
-  this.pointToParentDirection = typeof options.pointToParentDirection === 'undefined' ? true : options.pointToParentDirection;
-  this.offsetDistance = typeof options.offsetDistance === 'undefined' ? 0 : options.offsetDistance;
-  this.offsetAngle = options.offsetAngle || 0;
-  this.isStatic = !!options.isStatic;
-
-  var me = this;
-
-  this.isMouseOut = false;
-  this.isPressed = false;
-  this.mouseOutInterval = false;
-  this._friction = new Vector();
-
-  if (this.draggable) {
-
-    Utils.addEvent(this.el, 'mouseover', (function() {
-      return function(e) {
-        Mover.mouseover.call(me, e);
-      };
-    }()));
-
-    Utils.addEvent(this.el, 'mousedown', (function() {
-      return function(e) {
-        Mover.mousedown.call(me, e);
-      };
-    }()));
-
-    Utils.addEvent(this.el, 'mousemove', (function() {
-      return function(e) {
-        Mover.mousemove.call(me, e);
-      };
-    }()));
-
-    Utils.addEvent(this.el, 'mouseup', (function() {
-      return function(e) {
-        Mover.mouseup.call(me, e);
-      };
-    }()));
-
-    Utils.addEvent(this.el, 'mouseout', (function() {
-      return function(e) {
-        Mover.mouseout.call(me, e);
-      };
-    }()));
-  }
-};
-
-/**
- * Handles mouseup events.
- */
-Mover.mouseover = function() {
-  this.isMouseOut = false;
-  clearInterval(this.mouseOutInterval);
-};
-
-/**
- * Handles mousedown events.
- */
-Mover.mousedown = function() {
-  this.isPressed = true;
-  this.isMouseOut = false;
-};
-
-/**
- * Handles mousemove events.
- * @param  {Object} e An event object.
- */
-Mover.mousemove = function(e) {
-
-  var x, y;
-
-  if (this.isPressed) {
-
-    this.isMouseOut = false;
-
-    if (e.pageX && e.pageY) {
-      x = e.pageX - this.world.el.offsetLeft;
-      y = e.pageY - this.world.el.offsetTop;
-    } else if (e.clientX && e.clientY) {
-      x = e.clientX - this.world.el.offsetLeft;
-      y = e.clientY - this.world.el.offsetTop;
-    }
-
-    if (x & y) {
-      this.location = new Vector(x, y);
-    }
-
-    this._checkWorldEdges();
-  }
-
-};
-
-/**
- * Handles mouseup events.
- */
-Mover.mouseup = function() {
-  this.isPressed = false;
-  // TODO: add mouse to obj acceleration
-};
-
-/**
- * Handles mouse out events.
- */
-Mover.mouseout = function() {
-
-  var x, y, me = this, mouse = System.mouse;
-
-  if (this.isPressed) {
-
-    this.isMouseOut = true;
-
-    this.mouseOutInterval = setInterval(function () { // if mouse is too fast for block update, update via an interval until it catches up
-
-      if (me.isPressed && me.isMouseOut) {
-
-        x = mouse.location.x - me.world.el.offsetLeft;
-        y = mouse.location.y - me.world.el.offsetTop;
-
-        me.location = new Vector(x, y);
-      }
-    }, 16);
-  }
-};
-
-Mover.prototype.step = function() {
-
-  var i, max, x = this.location.x,
-      y = this.location.y;
-
-  this.beforeStep.call(this);
-
-  if (this.isStatic || this.isPressed) {
-    return;
-  }
-
-  // start apply forces
-
-  if (this.world.c) { // friction
-    this._friction.x = this.velocity.x;
-    this._friction.y = this.velocity.y;
-    this._friction.mult(-1);
-    this._friction.normalize();
-    this._friction.mult(this.world.c);
-    this.applyForce(this._friction);
-  }
-  this.applyForce(this.world.gravity); // gravity
-
-  // attractors
-  var attractors = System.getAllItemsByName('Attractor');
-  for (i = 0, max = attractors.length; i < max; i += 1) {
-    if (this.id !== attractors[i].id) {
-      this.applyForce(attractors[i].attract(this));
-    }
-  }
-
-  // repellers
-  var repellers = System.getAllItemsByName('Repeller');
-  for (i = 0, max = repellers.length; i < max; i += 1) {
-    if (this.id !== repellers[i].id) {
-      this.applyForce(repellers[i].attract(this));
-    }
-  }
-
-  // draggers
-  var draggers = System.getAllItemsByName('Dragger');
-  for (i = 0, max = draggers.length; i < max; i += 1) {
-    if (this.id !== draggers[i].id && Utils.isInside(this, draggers[i])) {
-      this.applyForce(draggers[i].drag(this));
-    }
-  }
-
-  if (this.applyAdditionalForces) {
-    this.applyAdditionalForces.call(this);
-  }
-
-  this.velocity.add(this.acceleration); // add acceleration
-
-  this.velocity.limit(this.maxSpeed, this.minSpeed);
-
-  this.location.add(this.velocity); // add velocity
-
-  if (this.pointToDirection) { // object rotates toward direction
-    if (this.velocity.mag() > 0.1) {
-      this.angle = Utils.radiansToDegrees(Math.atan2(this.velocity.y, this.velocity.x));
-    }
-  }
-
-  if (this.wrapWorldEdges) {
-    this._wrapWorldEdges();
-  } else if (this.checkWorldEdges) {
-    this._checkWorldEdges();
-  }
-
-  if (this.controlCamera) {
-    this._checkCameraEdges(x, y, this.location.x, this.location.y);
-  }
-
-  if (this.parent) { // parenting
-
-    if (this.offsetDistance) {
-
-      r = this.offsetDistance; // use angle to calculate x, y
-      theta = Utils.degreesToRadians(this.parent.angle + this.offsetAngle);
-      x = r * Math.cos(theta);
-      y = r * Math.sin(theta);
-
-      this.location.x = this.parent.location.x;
-      this.location.y = this.parent.location.y;
-      this.location.add(new Vector(x, y)); // position the child
-
-      if (this.pointToParentDirection) {
-        this.angle = Utils.radiansToDegrees(Math.atan2(this.parent.velocity.y, this.parent.velocity.x));
-      }
-
-    } else {
-      this.location.x = this.parent.location.x;
-      this.location.y = this.parent.location.y;
-    }
-  }
-
-  this.acceleration.mult(0);
-
-  if (this.life < this.lifespan) {
-    this.life += 1;
-  } else if (this.lifespan !== -1) {
-    System.remove(this);
-    return;
-  }
-
-  this.afterStep.call(this);
-};
-
-/**
- * Updates the corresponding DOM element's style property.
- * @function draw
- * @memberof Mover
- */
-Mover.prototype.draw = function() {
-  var cssText = this.getCSSText({
-    x: this.location.x - (this.width / 2),
-    y: this.location.y - (this.height / 2),
-    angle: this.angle,
-    scale: this.scale || 1,
-    width: this.width,
-    height: this.height,
-    colorMode: this.colorMode,
-    color0: this.color[0],
-    color1: this.color[1],
-    color2: this.color[2],
-    opacity: this.opacity,
-    zIndex: this.zIndex,
-    visibility: this.visibility,
-    borderRadius: this.borderRadius,
-    borderWidth: this.borderWidth,
-    borderStyle: this.borderStyle,
-    borderColor0: this.borderColor[0],
-    borderColor1: this.borderColor[1],
-    borderColor2: this.borderColor[2]
-  });
-  this.el.style.cssText = cssText;
-};
-
-/**
- * Concatenates a new cssText string.
- *
- * @function getCSSText
- * @memberof Mover
- * @param {Object} props A map of object properties.
- * @returns {string} A string representing cssText.
- */
-Mover.prototype.getCSSText = function(props) {
-  return Item._stylePosition.replace(/<x>/g, props.x).replace(/<y>/g, props.y).replace(/<angle>/g, props.angle).replace(/<scale>/g, props.scale) + 'width: ' +
-      props.width + 'px; height: ' + props.height + 'px; background-color: ' +
-      props.colorMode + '(' + props.color0 + ', ' + props.color1 + (props.colorMode === 'hsl' ? '%' : '') + ', ' + props.color2 + (props.colorMode === 'hsl' ? '%' : '') +');  opacity: ' + props.opacity + '; z-index: ' + props.zIndex + '; visibility: ' + props.visibility + '; border: ' +
-      props.borderWidth + 'px ' + props.borderStyle + ' ' + props.colorMode + '(' + props.borderColor0 + ', ' + props.borderColor1 + (props.colorMode === 'hsl' ? '%' : '') + ', ' + props.borderColor2 + (props.colorMode === 'hsl' ? '%' : '') + '); border-radius: ' +
-      props.borderRadius + '%;';
-};
-
-module.exports = Mover;
-
-
-},{"burner":3}],13:[function(_dereq_,module,exports){
-module.exports=_dereq_(12)
-},{"burner":3}],14:[function(_dereq_,module,exports){
-var Item = _dereq_('burner').Item,
-    SimplexNoise = _dereq_('quietriot'),
-    System = _dereq_('burner').System,
-    Utils = _dereq_('burner').Utils,
-    Vector = _dereq_('burner').Vector;
-
-/**
- * Creates a new Oscillator.
- *
- * Oscillators simulate wave patterns and move according to
- * amplitude and angular velocity. Oscillators are not affected
- * by gravity or friction.
- *
- * @constructor
- * @extends Item
- */
-function Oscillator(opt_options) {
-  Item.call(this);
-}
-Utils.extend(Oscillator, Item);
-
-/**
- * Initializes Oscillator.
- * @param  {Object} world An instance of World.
- * @param  {Object} [opt_options=] A map of initial properties.
- * @param {Object} [opt_options.initialLocation = The center of the world] The object's initial location.
- * @param {Object} [opt_options.lastLocation = {x: 0, y: 0}] The object's last location. Used to calculate
- *    angle if pointToDirection = true.
- * @param {Object} [opt_options.amplitude = {x: world width, y: world height}] Sets amplitude, the distance from the object's
- *    initial location (center of the motion) to either extreme.
- * @param {Object} [opt_options.acceleration = {x: 0.01, y: 0}] The object's acceleration. Oscillators have a
- *    constant acceleration.
- * @param {Object} [opt_options.aVelocity = new Vector()] Angular velocity.
- * @param {boolean} [opt_options.isStatic = false] If true, object will not move.
- * @param {boolean} [opt_options.perlin = false] If set to true, object will use Perlin Noise to calculate its location.
- * @param {number} [opt_options.perlinSpeed = 0.005] If perlin = true, perlinSpeed determines how fast the object location moves through the noise space.
- * @param {number} [opt_options.perlinTime = 0] Sets the Perlin Noise time.
- * @param {number} [opt_options.perlinAccelLow = -2] The lower bound of acceleration when perlin = true.
- * @param {number} [opt_options.perlinAccelHigh = 2] The upper bound of acceleration when perlin = true.
- * @param {number} [opt_options.offsetX = Math.random() * 10000] The x offset in the Perlin Noise space.
- * @param {number} [opt_options.offsetY = Math.random() * 10000] The y offset in the Perlin Noise space.
- * @param {number} [opt_options.width = 20] Width.
- * @param {number} [opt_options.height = 20] Height.
- * @param {Array} [opt_options.color = 200, 100, 0] Color.
- * @param {number} [opt_options.borderWidth = this.width / 4] Border width.
- * @param {string} [opt_options.borderStyle = 'solid'] Border style.
- * @param {Array} [opt_options.borderColor = 255, 150, 0] Border color.
- * @param {number} [opt_options.borderRadius = 100] Border radius.
- * @param {number} [opt_options.boxShadowSpread = this.width / 4] Box-shadow spread.
- * @param {Array} [opt_options.boxShadowColor = 147, 199, 196] Box-shadow color.
- */
-Oscillator.prototype.init = function(world, opt_options) {
-  Oscillator._superClass.init.call(this, world, opt_options);
-
-  var options = opt_options || {};
-
-  this.acceleration = options.acceleration || new Vector(0.01, 0);
-  this.aVelocity = options.aVelocity || new Vector();
-  this.isStatic = !!options.isStatic;
-  this.perlin = !!options.perlin;
-  this.perlinSpeed = typeof options.perlinSpeed === 'undefined' ? 0.005 : options.perlinSpeed;
-  this.perlinTime = options.perlinTime || 0;
-  this.perlinAccelLow = typeof options.perlinAccelLow === 'undefined' ? -2 : options.perlinAccelLow;
-  this.perlinAccelHigh = typeof options.perlinAccelHigh === 'undefined' ? 2 : options.perlinAccelHigh;
-  this.perlinOffsetX = typeof options.perlinOffsetX === 'undefined' ? Math.random() * 10000 : options.perlinOffsetX;
-  this.perlinOffsetY = typeof options.perlinOffsetY === 'undefined' ? Math.random() * 10000 : options.perlinOffsetY;
-  this.width = typeof options.width === 'undefined' ? 20 : options.width;
-  this.height = typeof options.height === 'undefined' ? 20 : options.height;
-  this.color = options.color || [200, 100, 0];
-  this.borderWidth = options.borderWidth || 0;
-  this.borderStyle = options.borderStyle || 'solid';
-  this.borderColor = options.borderColor || [255, 150, 50];
-  this.borderRadius = typeof options.borderRadius === 'undefined' ? 100 : options.borderRadius;
-  this.boxShadowOffsetX = options.boxShadowOffsetX || 0;
-  this.boxShadowOffsetY = options.boxShadowOffsetY || 0;
-  this.boxShadowBlur = options.boxShadowBlur || 0;
-  this.boxShadowSpread = options.boxShadowSpread || 0;
-  this.boxShadowColor = options.boxShadowColor || [200, 100, 0];
-  this.opacity = typeof options.opacity === 'undefined' ? 0.75 : options.opacity;
-  this.zIndex = typeof options.zIndex === 'undefined' ? 1 : options.zIndex;
-  this.parent = options.parent || null;
-  this.pointToDirection = !!options.pointToDirection;
-
-  //
-
-  this.lastLocation = new Vector();
-  this.amplitude = options.amplitude || new Vector(this.world.width / 2 - this.width,
-      this.world.height / 2 - this.height);
-  this.initialLocation = options.initialLocation ||
-    new Vector(this.world.width / 2, this.world.height / 2);
-  this.location.x = this.initialLocation.x;
-  this.location.y = this.initialLocation.y;
-};
-
-
-/**
- * Updates the oscillator's properties.
- */
-Oscillator.prototype.step = function () {
-
-  this.beforeStep.call(this);
-
-  if (this.isStatic) {
-    return;
-  }
-
-  if (this.perlin) {
-    this.perlinTime += this.perlinSpeed;
-    this.aVelocity.x =  Utils.map(SimplexNoise.noise(this.perlinTime + this.perlinOffsetX, 0), -1, 1, this.perlinAccelLow, this.perlinAccelHigh);
-    this.aVelocity.y =  Utils.map(SimplexNoise.noise(0, this.perlinTime + this.perlinOffsetY), -1, 1, this.perlinAccelLow, this.perlinAccelHigh);
-  } else {
-    this.aVelocity.add(this.acceleration); // add acceleration
-  }
-
-  if (this.parent) { // parenting
-    this.initialLocation.x = this.parent.location.x;
-    this.initialLocation.y = this.parent.location.y;
-  }
-
-  this.location.x = this.initialLocation.x + Math.sin(this.aVelocity.x) * this.amplitude.x;
-  this.location.y = this.initialLocation.y + Math.sin(this.aVelocity.y) * this.amplitude.y;
-
-  if (this.pointToDirection) { // object rotates toward direction
-      velDiff = Vector.VectorSub(this.location, this.lastLocation);
-      this.angle = Utils.radiansToDegrees(Math.atan2(velDiff.y, velDiff.x));
-  }
-
-  if (this.life < this.lifespan) {
-    this.life += 1;
-  } else if (this.lifespan !== -1) {
-    System.remove(this);
-  }
-
-  this.afterStep.call(this);
-
-  this.lastLocation.x = this.location.x;
-  this.lastLocation.y = this.location.y;
-};
-
-/**
- * Updates the corresponding DOM element's style property.
- * @function draw
- * @memberof Attractor
- */
-Oscillator.prototype.draw = function() {
-  var cssText = this.getCSSText({
-    x: this.location.x - (this.width / 2),
-    y: this.location.y - (this.height / 2),
-    angle: this.angle,
-    scale: this.scale || 1,
-    width: this.width,
-    height: this.height,
-    color0: this.color[0],
-    color1: this.color[1],
-    color2: this.color[2],
-    colorMode: this.colorMode,
-    borderRadius: this.borderRadius,
-    borderWidth: this.borderWidth,
-    borderStyle: this.borderStyle,
-    borderColor0: this.borderColor[0],
-    borderColor1: this.borderColor[1],
-    borderColor2: this.borderColor[2],
-    boxShadowOffsetX: this.boxShadowOffsetX,
-    boxShadowOffsetY: this.boxShadowOffsetY,
-    boxShadowBlur: this.boxShadowBlur,
-    boxShadowSpread: this.boxShadowSpread,
-    boxShadowColor0: this.boxShadowColor[0],
-    boxShadowColor1: this.boxShadowColor[1],
-    boxShadowColor2: this.boxShadowColor[2],
-    opacity: this.opacity,
-    zIndex: this.zIndex,
-    visibility: this.visibility
-  });
-
-  this.el.style.cssText = cssText;
-};
-
-/**
- * Concatenates a new cssText string.
- *
- * @function getCSSText
- * @memberof Attractor
- * @param {Object} props A map of object properties.
- * @returns {string} A string representing cssText.
- */
-Oscillator.prototype.getCSSText = function(props) {
-  return Item._stylePosition.replace(/<x>/g, props.x).replace(/<y>/g, props.y).replace(/<angle>/g, props.angle).replace(/<scale>/g, props.scale) + 'width: ' +
-      props.width + 'px; height: ' + props.height + 'px; background-color: ' +
-      props.colorMode + '(' + props.color0 + ', ' + props.color1 + (props.colorMode === 'hsl' ? '%' : '') + ', ' + props.color2 + (props.colorMode === 'hsl' ? '%' : '') +'); border: ' +
-      props.borderWidth + 'px ' + props.borderStyle + ' ' + props.colorMode + '(' + props.borderColor0 + ', ' + props.borderColor1 + (props.colorMode === 'hsl' ? '%' : '') + ', ' + props.borderColor2 + (props.colorMode === 'hsl' ? '%' : '') + '); border-radius: ' +
-      props.borderRadius + '%; box-shadow: ' + props.boxShadowOffsetX + 'px ' + props.boxShadowOffsetY + 'px ' + props.boxShadowBlur + 'px ' + props.boxShadowSpread + 'px ' + props.colorMode + '(' + props.boxShadowColor0 + ', ' + props.boxShadowColor1 + (props.colorMode === 'hsl' ? '%' : '') + ', ' + props.boxShadowColor2 + (props.colorMode === 'hsl' ? '%' : '') + '); opacity: ' + props.opacity + '; z-index: ' + props.zIndex + '; visibility: ' + props.visibility + ';';
-};
-
-module.exports = Oscillator;
-
-},{"burner":3,"quietriot":8}],15:[function(_dereq_,module,exports){
-var Item = _dereq_('burner').Item,
-    Mover = _dereq_('./Mover'),
-    Utils = _dereq_('burner').Utils,
-    Vector = _dereq_('burner').Vector;
-
-/**
- * Creates a new Particle object.
- *
- * @constructor
- * @extends Mover
- */
-function Particle(opt_options) {
-  Mover.call(this);
-}
-Utils.extend(Particle, Mover);
-
-/**
- * Initializes Particle.
- * @param  {Object} world An instance of World.
- * @param  {Object} [opt_options=] A map of initial properties.
- * @param {number} [opt_options.width = 20] Width
- * @param {number} [opt_options.height = 20] Height
- * @param {Array} [opt_options.color = [200, 200, 200]] Color.
- * @param {number} [opt_options.borderWidth = this.width / 4] Border width.
- * @param {number} [opt_options.borderRadius = 100] The particle's border radius.
- * @param {number} [opt_options.boxShadowSpread = this.width / 4] Box-shadow spread.
- * @param {number} [opt_options.lifespan = 50] The max life of the object. Set to -1 for infinite life.
- * @param {number} [opt_options.life = 0] The current life value. If greater than this.lifespan, object is destroyed.
- * @param {boolean} {opt_options.fade = true} If true, opacity decreases proportionally with life.
- * @param {boolean} {opt_options.shrink = true} If true, width and height decrease proportionally with life.
- * @param {boolean} [opt_options.checkWorldEdges = false] Set to true to check the object's location against the world's bounds.
- * @param {number} [opt_options.maxSpeed = 4] Maximum speed.
- * @param {number} [opt_options.zIndex = 1] The object's zIndex.
- */
-Particle.prototype.init = function(world, opt_options) {
-  Particle._superClass.init.call(this, world, opt_options);
-
-  var options = opt_options || {};
-
-  this.width = typeof options.width === 'undefined' ? 20 : options.width;
-  this.height = typeof options.height === 'undefined' ? 20 : options.height;
-  this.color = options.color || [200, 200, 200];
-  this.borderWidth = typeof options.borderWidth === 'undefined' ? this.width / 4 : options.borderWidth;
-  this.borderRadius = typeof options.borderRadius === 'undefined' ? 100 : options.borderRadius;
-  this.boxShadowSpread = typeof options.boxShadowSpread === 'undefined' ? this.width / 4 : options.boxShadowSpread;
-  this.lifespan = typeof options.lifespan === 'undefined' ? 50 : options.lifespan;
-  this.life = options.life || 0;
-  this.fade = typeof options.fade === 'undefined' ? true : options.fade;
-  this.shrink = typeof options.shrink === 'undefined' ? true : options.shrink;
-  this.checkWorldEdges = !!options.checkWorldEdges;
-  this.maxSpeed = typeof options.maxSpeed === 'undefined' ? 4 : options.maxSpeed;
-  this.zIndex = typeof options.zIndex === 'undefined' ? 1 : options.zIndex;
-
-  if (!options.acceleration) {
-    this.acceleration = new Vector(1, 1);
-    this.acceleration.normalize();
-    this.acceleration.mult(this.maxSpeed ? this.maxSpeed : 3);
-    this.acceleration.rotate(Utils.getRandomNumber(0, Math.PI * 2, true));
-  }
-  if (!options.velocity) {
-    this.velocity = new Vector();
-  }
-  this.initWidth = this.width;
-  this.initHeight = this.height;
-};
-
-/**
- * Applies additional forces.
- */
-Particle.prototype.afterStep = function() {
-
-  if (this.fade) {
-    this.opacity = Utils.map(this.life, 0, this.lifespan, 1, 0);
-  }
-
-  if (this.shrink) {
-    this.width = Utils.map(this.life, 0, this.lifespan, this.initWidth, 0);
-    this.height = Utils.map(this.life, 0, this.lifespan, this.initHeight, 0);
-  }
-};
-
-/**
- * Updates the corresponding DOM element's style property.
- * @function draw
- * @memberof Particle
- */
-Particle.prototype.draw = function() {
-  var cssText = this.getCSSText({
-    x: this.location.x - (this.width / 2),
-    y: this.location.y - (this.height / 2),
-    angle: this.angle,
-    scale: this.scale || 1,
-    width: this.width,
-    height: this.height,
-    color0: this.color[0],
-    color1: this.color[1],
-    color2: this.color[2],
-    colorMode: this.colorMode,
-    borderRadius: this.borderRadius,
-    borderWidth: this.borderWidth,
-    borderStyle: this.borderStyle,
-    borderColor0: this.borderColor[0],
-    borderColor1: this.borderColor[1],
-    borderColor2: this.borderColor[2],
-    boxShadowOffsetX: this.boxShadowOffsetX,
-    boxShadowOffsetY: this.boxShadowOffsetY,
-    boxShadowBlur: this.boxShadowBlur,
-    boxShadowSpread: this.boxShadowSpread,
-    boxShadowColor0: this.boxShadowColor[0],
-    boxShadowColor1: this.boxShadowColor[1],
-    boxShadowColor2: this.boxShadowColor[2],
-    opacity: this.opacity,
-    zIndex: this.zIndex,
-    visibility: this.visibility
-  });
-  this.el.style.cssText = cssText;
-};
-
-/**
- * Concatenates a new cssText string.
- *
- * @function getCSSText
- * @memberof Particle
- * @param {Object} props A map of object properties.
- * @returns {string} A string representing cssText.
- */
-Particle.prototype.getCSSText = function(props) {
-  return Item._stylePosition.replace(/<x>/g, props.x).replace(/<y>/g, props.y).replace(/<angle>/g, props.angle).replace(/<scale>/g, props.scale) + 'width: ' +
-      props.width + 'px; height: ' + props.height + 'px; background-color: ' +
-      props.colorMode + '(' + props.color0 + ', ' + props.color1 + (props.colorMode === 'hsl' ? '%' : '') + ', ' + props.color2 + (props.colorMode === 'hsl' ? '%' : '') +'); border: ' +
-      props.borderWidth + 'px ' + props.borderStyle + ' ' + props.colorMode + '(' + props.borderColor0 + ', ' + props.borderColor1 + (props.colorMode === 'hsl' ? '%' : '') + ', ' + props.borderColor2 + (props.colorMode === 'hsl' ? '%' : '') + '); border-radius: ' +
-      props.borderRadius + '%; box-shadow: ' + props.boxShadowOffsetX + 'px ' + props.boxShadowOffsetY + 'px ' + props.boxShadowBlur + 'px ' + props.boxShadowSpread + 'px ' + props.colorMode + '(' + props.boxShadowColor0 + ', ' + props.boxShadowColor1 + (props.colorMode === 'hsl' ? '%' : '') + ', ' + props.boxShadowColor2 + (props.colorMode === 'hsl' ? '%' : '') + '); opacity: ' + props.opacity + '; z-index: ' + props.zIndex + '; visibility: ' + props.visibility + ';';
-};
-
-module.exports = Particle;
-
-
-},{"./Mover":12,"burner":3}],16:[function(_dereq_,module,exports){
+},{}],23:[function(_dereq_,module,exports){
 module.exports = {
   Base: _dereq_('./base'),
   Storm: _dereq_('./storm'),
-  //StormBit: require('./stormbit'),
+  StormBit: _dereq_('./stormbit'),
   Spine: _dereq_('./spine'),
   Shell: _dereq_('./shell'),
+  ShellBit: _dereq_('./shellbit'),
   Vortex: _dereq_('./vortex'),
-  //VortexBit: require('./vortexbit')
+  VortexBit: _dereq_('./vortexbit')
 };
 
-},{"./base":10,"./shell":18,"./spine":19,"./storm":20,"./vortex":21}],17:[function(_dereq_,module,exports){
+},{"./base":21,"./shell":25,"./shellbit":26,"./spine":27,"./storm":28,"./stormbit":29,"./vortex":30,"./vortexbit":31}],24:[function(_dereq_,module,exports){
 var Vector = _dereq_('burner').Vector;
 
 /**
@@ -2972,7 +3655,7 @@ Mask.prototype.configure = function(props) {
 
 module.exports = Mask;
 
-},{"burner":3}],18:[function(_dereq_,module,exports){
+},{"burner":14}],25:[function(_dereq_,module,exports){
 /**
  * Creates a new Shell.
  *
@@ -3001,7 +3684,36 @@ function Shell(opt_options) {
 
 module.exports = Shell;
 
-},{}],19:[function(_dereq_,module,exports){
+},{}],26:[function(_dereq_,module,exports){
+/**
+ * Creates a new Shell.
+ *
+ * @param {Object} [opt_options=] A map of initial properties.
+ * @param {number} [opt_options.minScale = 0.3] Minium width of the shell base.
+ * @param {number} [opt_options.opacity = 0] shell opacity.
+ * @param {number} [opt_options.blur = 350] shell blur. Recommended values bw 300 - 400.
+ * @param {number} [opt_options.spread = 250] shell spread. Recommended values bw 200 - 300.
+ * @param {string} [opt_options.easing = 'easeInExpo'] An easing function to determine shell shape along the spine. See Easing docs for possible values.
+ * @param {number} [opt_options.colorMin = 50] Minimum color. Valid values bw 0 - 255.
+ * @param {number} [opt_options.colorMax = 255] Maximum color. Valid values bw 0 - 255.
+ * @constructor
+ */
+function Shell(opt_options) {
+
+  var options = opt_options || {};
+
+  this.minScale = typeof options.minScale !== 'undefined' ? options.minScale : 0.1;
+  this.maxScale = typeof options.maxScale !== 'undefined' ? options.maxScale : 8;
+  this.opacity = typeof options.opacity !== 'undefined' ? options.opacity : 0.75;
+  this.blur = typeof options.blur !== 'undefined' ? options.blur : 30;
+  this.easing = options.easing || 'easeInExpo';
+  this.colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 100;
+  this.colorMax = typeof options.colorMax !== 'undefined' ? options.colorMax : 255;
+}
+
+module.exports = Shell;
+
+},{}],27:[function(_dereq_,module,exports){
 /**
  * Creates a new Spine.
  *
@@ -3022,7 +3734,7 @@ function Spine(opt_options) {
 
 module.exports = Spine;
 
-},{}],20:[function(_dereq_,module,exports){
+},{}],28:[function(_dereq_,module,exports){
 var ColorPalette = _dereq_('colorpalette');
 var System = _dereq_('burner').System;
 var Utils = _dereq_('burner').Utils;
@@ -3125,11 +3837,116 @@ Storm.prototype.configure = function(opt_options) {
 
 module.exports = Storm;
 
-},{"burner":3,"colorpalette":6}],21:[function(_dereq_,module,exports){
+},{"burner":14,"colorpalette":17}],29:[function(_dereq_,module,exports){
+var ColorPalette = _dereq_('colorpalette');
+var System = _dereq_('bitshadowmachine').System;
+var Utils = _dereq_('burner').Utils;
+var Vector = _dereq_('burner').Vector;
+
+/**
+ * Creates a new StormBit.
+ * @param {Object} [opt_options=] A map of initial properties.
+ * @param {number} [opt_options.sizeMin = 1] Minimum particle size.
+ * @param {number} [opt_options.sizeMax = 3] Maximum particle size.
+ * @param {number} [opt_options.speedMin = 1] Minimum particle speed.
+ * @param {number} [opt_options.speedMax = 20] Maximum particle speed.
+ * @param {number} [opt_options.opacityMin = 0.1] Minimum opacity.
+ * @param {number} [opt_options.opacityMax = 0.2] Maximum opacity.
+ * @param {number} [opt_options.lifespanMin = 70] Minimum lifespan.
+ * @param {number} [opt_options.lifespanMax = 120] Maximum lifespan.
+ * @param {number} [opt_options.colorMin = 100] Minimum color. Valid values bw 0 - 255.
+ * @param {number} [opt_options.colorMax = 200] Maximum color. Valid values bw 0 - 255.
+ * @constructor
+ */
+function StormBit(opt_options) {
+
+  var options = opt_options || {};
+
+  this.sizeMin = typeof options.sizeMin !== 'undefined' ? options.sizeMin : 1;
+  this.sizeMax = typeof options.sizeMax !== 'undefined' ? options.sizeMax : 2;
+  this.speedMin = typeof options.speedMin !== 'undefined' ? options.speedMin : 1;
+  this.speedMax = typeof options.speedMax !== 'undefined' ? options.speedMax : 30;
+  this.opacityMin = typeof options.opacityMin !== 'undefined' ? options.opacityMin : 0.05;
+  this.opacityMax = typeof options.opacityMax !== 'undefined' ? options.opacityMax : 0.3;
+  this.lifespanMin = typeof options.lifespanMin !== 'undefined' ? options.lifespanMin : 70;
+  this.lifespanMax = typeof options.lifespanMax !== 'undefined' ? options.lifespanMax : 120;
+  this.colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 100;
+  this.colorMax = typeof options.colorMax !== 'undefined' ? options.colorMax : 200;
+  this.rate = options.rate || 1;
+  this.fade = !!options.fade;
+
+  this.width = 0;
+  this.height = 0;
+  this.lifespan = -1;
+  this.startColor = [100, 100, 100]; // TODO: make these options
+  this.endColor = [200, 200, 200];
+  this.pl = new ColorPalette();
+  this.pl.addColor({ // adds a random sampling of colors to palette
+    min: 12,
+    max: 24,
+    startColor: this.startColor,
+    endColor: this.endColor
+  });
+  this.opacity = 0;
+  this.beforeStep = this._beforeStep.bind(this);
+
+}
+
+/**
+ * Called before each step function.
+ * @private
+ * @memberOf StormBit
+ */
+StormBit.prototype._beforeStep = function() {
+
+  //if ((System.clock % this.rate) === 0) {
+
+    for (var i = 0; i < 1; i++) {
+
+      var accel = new Vector(1, 1);
+      accel.normalize();
+      accel.mult(Utils.getRandomNumber(0.1, 0.25, true));
+      accel.rotate(Utils.degreesToRadians(Utils.getRandomNumber(140, 310, true)));
+      this.acceleration = accel;
+
+      var size = Utils.getRandomNumber(this.sizeMin, this.sizeMax, this.sizeMin || this.sizeMax);
+      var maxSpeed = Utils.getRandomNumber(this.speedMin, this.speedMax, true);
+      var opacity = Utils.map(size, this.sizeMin, this.sizeMax, this.opacityMax, this.opacityMin);
+      var lifespan = Utils.getRandomNumber(this.lifespanMin, this.lifespanMax);
+      var color = Utils.getRandomNumber(this.colorMin, this.colorMax);
+
+      System.add('Particle', {
+        location: new Vector(this.parent.location.x, this.parent.location.y),
+        acceleration: accel,
+        scale: size,
+        maxSpeed: maxSpeed,
+        opacity: opacity,
+        fade: this.fade,
+        lifespan: lifespan
+      });
+
+    }
+  //}
+};
+
+/**
+ * Configures an instance of StormBit.
+ * @param {Object} [opt_options=] A map of options.
+ * @param {Object} [opt_options.parent = null] The StormBit's parent.
+ * @memberOf StormBit
+ */
+StormBit.prototype.configure = function(opt_options) {
+  var options = opt_options || {};
+  this.parent = options.parent || null;
+};
+
+module.exports = StormBit;
+
+},{"bitshadowmachine":9,"burner":14,"colorpalette":17}],30:[function(_dereq_,module,exports){
 var Burner = _dereq_('burner');
-var Mover = _dereq_('./items/mover');
-var Oscillator = _dereq_('./items/oscillator');
-var Particle = _dereq_('./items/particle');
+var Mover = _dereq_('bitshadowitems').Mover;
+var Oscillator = _dereq_('bitshadowitems').Oscillator;
+var Particle = _dereq_('bitshadowitems').Particle;
 var Utils = _dereq_('burner').Utils;
 var Vector = _dereq_('burner').Vector;
 var SimplexNoise = _dereq_('quietriot');
@@ -3316,6 +4133,201 @@ Vortex.prototype._getNoise = function() {
 
 module.exports = Vortex;
 
-},{"./easing":11,"./items/mover":13,"./items/oscillator":14,"./items/particle":15,"./mask":17,"burner":3,"quietriot":8}]},{},[16])
-(16)
+},{"./easing":22,"./mask":24,"bitshadowitems":1,"burner":14,"quietriot":19}],31:[function(_dereq_,module,exports){
+var BitShadowMachine = _dereq_('bitshadowmachine');
+var Mover = _dereq_('bitshadowitems').Mover;
+var Oscillator = _dereq_('bitshadowitems').Oscillator;
+var Particle = _dereq_('bitshadowitems').Particle;
+var Utils = _dereq_('burner').Utils;
+var Vector = _dereq_('burner').Vector;
+var SimplexNoise = _dereq_('quietriot');
+var Easing = _dereq_('./easing');
+var Mask = _dereq_('./mask');
+
+/**
+ * Creates a new VortexBit.
+ * @param {Object} base A map of properties describing the base of the tornado.
+ * @param {Object} storm A map of properties describing the storm at the base of the tornado.
+ * @param {Object} spine A map of properties describing the tornado's spine.
+ * @param {Object} shell A map of properties describing the tornado's shell (funnel).
+ * @constructor
+ */
+function VortexBit(base, storm, spine, shell) {
+  this.base = base;
+  this.storm = storm;
+  this.spine = spine;
+  this.shell = shell;
+}
+
+/**
+ * Holds a Perlin noise value.
+ * @type {Number}
+ * @memberof VortexBit
+ */
+VortexBit.noise = 0;
+
+/**
+ * Initializes an instance of VortexBit.
+ * @param {Object} [opt_options=] A map of initial world properties.
+ * @param {Object} [opt_options.el = document.body] World's DOM object.
+ * @param {number} [opt_options.width = 800] World width in pixels.
+ * @param {number} [opt_options.height = 600] World height in pixels.
+ * @param {number} [opt_options.borderWidth = 1] World border widthin pixels.
+ * @param {string} [opt_options.borderStyle = 'solid'] World border style.
+ * @param {Object} [opt_options.borderColor = 0, 0, 0] World border color.
+ * @memberof VortexBit
+ */
+VortexBit.prototype.init = function(opt_options) {
+
+  var options = opt_options || {};
+
+  BitShadowMachine.System.Classes = {
+    Mover: Mover,
+    Oscillator: Oscillator,
+    Particle: Particle
+  };
+  BitShadowMachine.System.setup(this._setupCallback.bind(this, options));
+  BitShadowMachine.System.clock = 10000; // advance the clock so we start deeper in the noise space
+  BitShadowMachine.System.loop(this._getNoise.bind(this));
+};
+
+/**
+ * Sets up the world and items.
+ * @param {Object} options World options.
+ * @memberof VortexBit
+ * @private
+ */
+VortexBit.prototype._setupCallback = function(options) {
+
+  var rand = Utils.getRandomNumber,
+      map = Utils.map;
+
+  var world = BitShadowMachine.System.add('World', {
+    el: options.el || document.body,
+    resolution: options.resolution || 4,
+    color: options.color || [40, 40, 40],
+    width: options.width || 800,
+    height: options.height || 600,
+    gravity: new Vector(),
+    c: 0
+  });
+
+  // BASE
+  this.base.configure(world);
+  var myBase = BitShadowMachine.System.add('Oscillator', this.base);
+
+  // STORM
+  this.storm.configure({
+    parent: myBase
+  });
+  BitShadowMachine.System.add('Mover', this.storm);
+
+  // SPINE
+  for (var i = 0, max = Math.floor(world.height / this.spine.density); i < max; i++) {
+
+    var ease = Easing[this.spine.easing].call(null, i, 0, 1, max - 1);
+
+    // joints
+    var joint = BitShadowMachine.System.add('Mover', {
+      parent: myBase,
+      offsetDistance: ease * world.height,
+      offsetAngle: 270,
+      opacity: this.spine.opacity,
+      afterStep: this._jointAfterStep
+    });
+    joint.index = i;
+
+    // use Perlin noise to generate the parent node's offset from the funnel's y-axis
+    // use easing so the effect is amplified
+    joint.offsetFromCenter = Easing.easeInSine(i, 0, 1, max - 1) *
+        SimplexNoise.noise(i * 0.1, 0) * 10;
+
+    // pillows
+    var easeShellShape = Easing[this.shell.easing].call(null, i, 0, 1, max - 1);
+
+    var colorNoise = Math.floor(Utils.map(SimplexNoise.noise(i * 0.05, 0),
+        -1, 1, this.shell.colorMin, this.shell.colorMax));
+
+    for (var j = 0; j < (i + 1) * 4; j++) {
+
+      var scale = (easeShellShape * this.shell.maxScale) + this.shell.minScale;
+      BitShadowMachine.System.add('Oscillator', {
+        perlin: false,
+        parent: joint,
+        blur: easeShellShape,
+        color: [colorNoise, colorNoise, colorNoise],
+        opacity: Utils.map(scale, this.shell.minScale, this.shell.maxScale, 0.3, 0.1),
+        scale: scale,
+        amplitude: new Vector(Utils.map(easeShellShape, 0, 1, 1, rand(50, 100)),
+            Utils.map(easeShellShape, 0, 1, 1, rand(10, 64))),
+        acceleration: new BitShadowMachine.Vector(2 / (i + 1), 0.05),
+        aVelocity: new BitShadowMachine.Vector(rand(0, 40), rand(0, 40))
+      });
+    }
+  }
+
+  // MASKS
+  /*var maskWidth = (document.body.scrollWidth - world.width) / 2,
+    maskHeight = (document.body.scrollHeight - world.height) / 2;
+
+  var maskTop = new Mask();
+  maskTop.configure({
+    location: new Vector(world.width/2, -1 - maskHeight / 2),
+    world: world,
+    width: world.width + 10,
+    height: maskHeight
+  });
+  BitShadowMachine.System.add('Mover', maskTop);
+
+  var maskBottom = new Mask();
+  maskBottom.configure({
+    location: new BitShadowMachine.Vector(world.width/2, world.height + 1 + maskHeight / 2),
+    world: world,
+    width: world.width + 10,
+    height: maskHeight
+  });
+  BitShadowMachine.System.add('Mover', maskBottom);
+
+  var maskLeft = new Mask();
+  maskLeft.configure({
+    location: new BitShadowMachine.Vector(-1 - maskWidth / 2, world.height / 2),
+    world: world,
+    width: maskWidth,
+    height: document.body.scrollHeight
+  });
+  BitShadowMachine.System.add('Mover', maskLeft);
+
+  var maskRight = new Mask();
+  maskRight.configure({
+    location: new BitShadowMachine.Vector(world.width + 1 + maskWidth / 2, world.height / 2),
+    world: world,
+    width: maskWidth,
+    height: document.body.scrollHeight
+  });
+  BitShadowMachine.System.add('Mover', maskRight);*/
+};
+
+/**
+ * Called at the end of the joints' step function.
+ * @memberof VortexBit
+ * @private
+ */
+VortexBit.prototype._jointAfterStep = function() {
+  var offset = this.index * this.offsetFromCenter * VortexBit.noise;
+  this.location.x = this.location.x + offset;
+};
+
+/**
+ * Called at the end of each animation frame.
+ * @memberof VortexBit
+ * @private
+ */
+VortexBit.prototype._getNoise = function() {
+  VortexBit.noise = SimplexNoise.noise(BitShadowMachine.System.clock * 0.0001, 0);
+};
+
+module.exports = VortexBit;
+
+},{"./easing":22,"./mask":24,"bitshadowitems":1,"bitshadowmachine":9,"burner":14,"quietriot":19}]},{},[23])
+(23)
 });

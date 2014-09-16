@@ -63,6 +63,9 @@ VortexBit.prototype.init = function(opt_options) {
  */
 VortexBit.prototype._setupCallback = function(options) {
 
+  var rand = Utils.getRandomNumber,
+      map = Utils.map;
+
   var world = BitShadowMachine.System.add('World', {
     el: options.el || document.body,
     resolution: options.resolution || 4,
@@ -101,7 +104,7 @@ VortexBit.prototype._setupCallback = function(options) {
     // use Perlin noise to generate the parent node's offset from the funnel's y-axis
     // use easing so the effect is amplified
     joint.offsetFromCenter = Easing.easeInSine(i, 0, 1, max - 1) *
-        SimplexNoise.noise(i * 0.1, 0) * 20;
+        SimplexNoise.noise(i * 0.1, 0) * 10;
 
     // pillows
     var easeShellShape = Easing[this.shell.easing].call(null, i, 0, 1, max - 1);
@@ -109,21 +112,22 @@ VortexBit.prototype._setupCallback = function(options) {
     var colorNoise = Math.floor(Utils.map(SimplexNoise.noise(i * 0.05, 0),
         -1, 1, this.shell.colorMin, this.shell.colorMax));
 
-    for (var j = 0; j < (i + 1) * 5; j++) {
-      console.log(easeShellShape);
+    for (var j = 0; j < (i + 1) * 4; j++) {
+
+      var scale = (easeShellShape * this.shell.maxScale) + this.shell.minScale;
       BitShadowMachine.System.add('Oscillator', {
-        parent: joint,
-        opacity: this.shell.opacity,
-        color: [colorNoise, colorNoise, colorNoise],
-        blur: (easeShellShape * this.shell.blur) + this.shell.minWidth,
         perlin: false,
-        amplitude: new Vector(Utils.map(easeShellShape, 0, 1, 1, 100), Utils.map(easeShellShape, 0, 1, 1, 24)),
-        acceleration: new BitShadowMachine.Vector(1 / (i + 1), 0.05),
-        aVelocity: new BitShadowMachine.Vector(Utils.getRandomNumber(0, 40), Utils.getRandomNumber(0, 40))
-        //acceleration: new Vector(1 / (i + 1), 0.01)
+        parent: joint,
+        blur: easeShellShape,
+        color: [colorNoise, colorNoise, colorNoise],
+        opacity: Utils.map(scale, this.shell.minScale, this.shell.maxScale, 0.3, 0.1),
+        scale: scale,
+        amplitude: new Vector(Utils.map(easeShellShape, 0, 1, 1, rand(50, 100)),
+            Utils.map(easeShellShape, 0, 1, 1, rand(10, 64))),
+        acceleration: new BitShadowMachine.Vector(2 / (i + 1), 0.05),
+        aVelocity: new BitShadowMachine.Vector(rand(0, 40), rand(0, 40))
       });
     }
-
   }
 
   // MASKS
