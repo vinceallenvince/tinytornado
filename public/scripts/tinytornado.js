@@ -1,4 +1,195 @@
 !function(e){if("object"==typeof exports)module.exports=e();else if("function"==typeof define&&define.amd)define(e);else{var n;"undefined"!=typeof window?n=window:"undefined"!=typeof global?n=global:"undefined"!=typeof self&&(n=self),n.TinyTornado=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
+/*global document, window */
+
+/**
+ * Creates a new FPSDisplay object.
+ *
+ * Use this class to create a field at the
+ * top of the browser that displays the current
+ * frames per second and total number of elements
+ * in an optional passed array.
+ *
+ * Note: FPSDisplay will not function in browsers
+ * whose Date object does not support Date.now().
+ * These include IE6, IE7, and IE8.
+ *
+ * @constructor
+ */
+function FPSDisplay() {}
+
+/**
+ * Name
+ * @type {string}
+ * @memberof FPSDisplay
+ */
+FPSDisplay.name = 'FPSDisplay';
+
+/**
+ * Set to false to stop requesting animation frames.
+ * @type {boolean}
+ * @memberof FPSDisplay
+ */
+FPSDisplay.active = false;
+
+/**
+ * Frames per second.
+ * @type {number}
+ * @memberof FPSDisplay
+ */
+FPSDisplay.fps = 0;
+
+/**
+ * Total items.
+ * @type {number}
+ * @memberof FPSDisplay
+ */
+FPSDisplay.totalItems = 0;
+
+/**
+ * The current time.
+ * @type {number}
+ * @private
+ * @memberof FPSDisplay
+ */
+FPSDisplay._time = Date.now();
+
+/**
+ * The time at the last frame.
+ * @type {number}
+ * @private
+ * @memberof FPSDisplay
+ */
+FPSDisplay._timeLastFrame = FPSDisplay._time;
+
+/**
+ * The time the last second was sampled.
+ * @type {number}
+ * @private
+ * @memberof FPSDisplay
+ */
+FPSDisplay._timeLastSecond = FPSDisplay._time;
+
+/**
+ * Holds the total number of frames
+ * between seconds.
+ * @type {number}
+ * @private
+ * @memberof FPSDisplay
+ */
+FPSDisplay._frameCount = 0;
+
+/**
+ * Initializes the FPSDisplay.
+ * @function update
+ * @memberof FPSDisplay
+ */
+FPSDisplay.init = function() {
+
+  if (this.el) { // should only create one instance of FPSDisplay.
+    return;
+  }
+
+  this.active = true;
+
+  /**
+   * A reference to the DOM element containing the display.
+   * @private
+   */
+  this.el = document.createElement('div');
+  this.el.id = 'FPSDisplay';
+  this.el.className = 'fpsDisplay';
+  this.el.style.backgroundColor = 'black';
+  this.el.style.color = 'white';
+  this.el.style.fontFamily = 'Helvetica';
+  this.el.style.padding = '0.5em';
+  this.el.style.opacity = '0.5';
+  this.el.style.position = 'fixed';
+  this.el.style.top = 0;
+  this.el.style.right = 0;
+  this.el.style.left = 0;
+  this.el.style.zIndex = 1000;
+
+
+  // create totol elements label
+  var labelContainer = document.createElement('span');
+  labelContainer.className = 'fpsDisplayLabel';
+  labelContainer.style.marginLeft = '0.5em';
+  label = document.createTextNode('total elements: ');
+  labelContainer.appendChild(label);
+  this.el.appendChild(labelContainer);
+
+  // create textNode for totalElements
+  this.totalElementsValue = document.createTextNode('0');
+  this.el.appendChild(this.totalElementsValue);
+
+  // create fps label
+  labelContainer = document.createElement('span');
+  labelContainer.className = 'fpsDisplayLabel';
+  labelContainer.style.marginLeft = '0.5em';
+  var label = document.createTextNode('fps: ');
+  labelContainer.appendChild(label);
+  this.el.appendChild(labelContainer);
+
+  // create textNode for fps
+  this.fpsValue = document.createTextNode('0');
+  this.el.appendChild(this.fpsValue);
+
+  document.body.appendChild(this.el);
+
+};
+
+/**
+ * If 1000ms have elapsed since the last evaluated second,
+ * fps is assigned the total number of frames rendered and
+ * its corresponding textNode is updated. The total number of
+ * elements is also updated.
+ *
+ * @function update
+ * @memberof FPSDisplay
+ * @param {Number} [opt_totalItems] The total items in the system.
+ */
+FPSDisplay.update = function(opt_totalItems) {
+
+  this.totalItems = opt_totalItems || 0;
+
+  this._time = Date.now();
+  this._frameCount++;
+
+  // at least a second has passed
+  if (this._time > this._timeLastSecond + 1000) {
+
+    this.fps = this._frameCount;
+    this._timeLastSecond = this._time;
+    this._frameCount = 0;
+
+    this.fpsValue.nodeValue = this.fps;
+    this.totalElementsValue.nodeValue = this.totalItems;
+  }
+};
+
+/**
+ * Hides FPSDisplay from DOM.
+ * @function hide
+ * @memberof FPSDisplay
+ */
+FPSDisplay.hide = function() {
+  this.el.style.display = 'none';
+  FPSDisplay.active = false;
+};
+
+/**
+ * Shows FPSDisplay from DOM.
+ * @function show
+ * @memberof FPSDisplay
+ */
+FPSDisplay.show = function() {
+  this.el.style.display = 'block';
+  FPSDisplay.active = true;
+};
+
+module.exports = FPSDisplay;
+
+},{}],2:[function(_dereq_,module,exports){
 /*global document */
 
 var Vector = _dereq_('vector2d-lib');
@@ -344,7 +535,7 @@ Item.prototype.getCSSText = function(props) {
 
 module.exports = Item;
 
-},{"vector2d-lib":9}],2:[function(_dereq_,module,exports){
+},{"vector2d-lib":9}],3:[function(_dereq_,module,exports){
 module.exports = {
   Item: _dereq_('./item'),
   System: _dereq_('./system'),
@@ -353,7 +544,7 @@ module.exports = {
   World: _dereq_('./world')
 };
 
-},{"./item":1,"./system":3,"./world":4,"drawing-utils-lib":6,"vector2d-lib":9}],3:[function(_dereq_,module,exports){
+},{"./item":2,"./system":4,"./world":5,"drawing-utils-lib":7,"vector2d-lib":9}],4:[function(_dereq_,module,exports){
 /*global window, document */
 /*jshint supernew:true */
 
@@ -490,7 +681,7 @@ System._addWorld = function(world) {
  * @memberof System
  * @param {string} [opt_klass = 'Item'] The name of the class to add.
  * @param {Object} [opt_options=] A map of initial properties.
- * @param {string=} [opt_world = System._records[0]] An instance of World to contain the item.
+ * @param {Object} [opt_world = System._records[0]] An instance of World to contain the item.
  * @returns {Object} An instance of the added item.
  */
 System.add = function(opt_klass, opt_options, opt_world) {
@@ -550,7 +741,9 @@ System.remove = function (obj) {
 
   for (i = 0, max = records.length; i < max; i++) {
     if (records[i].id === obj.id) {
-      records[i].el.style.visibility = 'hidden'; // hide item
+      if (records[i].el) {
+        records[i].el.style.visibility = 'hidden'; // hide item
+      }
       System._pool[System._pool.length] = records.splice(i, 1)[0]; // move record to pool array
       break;
     }
@@ -637,6 +830,7 @@ System._stepForward = function() {
       }
     }
   }
+  System.clock++;
 };
 
 /**
@@ -848,7 +1042,7 @@ System._toggleFPS = function() {
 
 module.exports = System;
 
-},{"./item":1,"./world":4,"drawing-utils-lib":6,"fpsdisplay":7,"vector2d-lib":9}],4:[function(_dereq_,module,exports){
+},{"./item":2,"./world":5,"drawing-utils-lib":7,"fpsdisplay":1,"vector2d-lib":9}],5:[function(_dereq_,module,exports){
 var Vector = _dereq_('vector2d-lib'),
     Item = _dereq_('./item'),
     Utils = _dereq_('drawing-utils-lib');
@@ -880,7 +1074,7 @@ Utils.extend(World, Item);
 /**
  * Resets all properties.
  * @function init
- * @memberof Item
+ * @memberof World
  *
  * @param {Object} [opt_options=] A map of initial properties.
  * @param {number} [opt_options.width = this.el.scrollWidth] Width.
@@ -901,7 +1095,7 @@ World.prototype.init = function(world, opt_options) {
   this.borderStyle = options.borderStyle || 'none';
   this.borderColor = options.borderColor || [0, 0, 0];
   this.gravity = options.gravity || new Vector(0, 1);
-  this.c = options.c || 0.1;
+  this.c = typeof options.c !== 'undefined' ? options.c : 0.1;
   this.pauseStep = !!options.pauseStep;
   this.pauseDraw = !!options.pauseDraw;
   this.el.className = this.name.toLowerCase();
@@ -964,7 +1158,7 @@ World.prototype.getCSSText = function(props) {
 
 module.exports = World;
 
-},{"./item":1,"drawing-utils-lib":6,"vector2d-lib":9}],5:[function(_dereq_,module,exports){
+},{"./item":2,"drawing-utils-lib":7,"vector2d-lib":9}],6:[function(_dereq_,module,exports){
 var Utils = _dereq_('drawing-utils-lib');
 /**
  * Creates a new ColorPalette object.
@@ -1128,7 +1322,7 @@ ColorPalette.prototype.getColor = function() {
 
 module.exports = ColorPalette;
 
-},{"drawing-utils-lib":6}],6:[function(_dereq_,module,exports){
+},{"drawing-utils-lib":7}],7:[function(_dereq_,module,exports){
 /*jshint supernew:true */
 /** @namespace */
 var Utils = {
@@ -1152,20 +1346,49 @@ Utils.extend = function(subClass, superClass) {
 };
 
 /**
- * Generates a psuedo-random number within a range.
+ * Generates a psuedo-random number within an inclusive range.
  *
  * @function getRandomNumber
  * @memberof Utils
  * @param {number} low The low end of the range.
  * @param {number} high The high end of the range.
- * @param {boolean} [flt] Set to true to return a float.
+ * @param {boolean} [flt] Set to true to return a float or when passing floats as a range.
  * @returns {number} A number.
  */
 Utils.getRandomNumber = function(low, high, flt) {
   if (flt) {
-    return Math.random()*(high-(low-1)) + low;
+    return (Math.random() * (high - low)) + low;
   }
-  return Math.floor(Math.random()*(high-(low-1))) + low;
+  high++;
+  return Math.floor((Math.random() * (high - low))) + low;
+};
+
+/**
+ * Determines the size of the browser window.
+ *
+ * @function extend
+ * @memberof System
+ * @returns {Object} The current browser window width and height.
+ */
+Utils.getWindowSize = function() {
+
+  var d = {
+    'width' : false,
+    'height' : false
+  };
+
+  if (typeof(window.innerWidth) !== 'undefined') {
+    d.width = window.innerWidth;
+    d.height = window.innerHeight;
+  } else if (typeof(document.documentElement) !== 'undefined' &&
+      typeof(document.documentElement.clientWidth) !== 'undefined') {
+    d.width = document.documentElement.clientWidth;
+    d.height = document.documentElement.clientHeight;
+  } else if (typeof(document.body) !== 'undefined') {
+    d.width = document.body.clientWidth;
+    d.height = document.body.clientHeight;
+  }
+  return d;
 };
 
 /**
@@ -1299,197 +1522,6 @@ Utils.capitalizeFirstLetter = function(string) {
 };
 
 module.exports = Utils;
-},{}],7:[function(_dereq_,module,exports){
-/*global document, window */
-
-/**
- * Creates a new FPSDisplay object.
- *
- * Use this class to create a field at the
- * top of the browser that displays the current
- * frames per second and total number of elements
- * in an optional passed array.
- *
- * Note: FPSDisplay will not function in browsers
- * whose Date object does not support Date.now().
- * These include IE6, IE7, and IE8.
- *
- * @constructor
- */
-function FPSDisplay() {}
-
-/**
- * Name
- * @type {string}
- * @memberof FPSDisplay
- */
-FPSDisplay.name = 'FPSDisplay';
-
-/**
- * Set to false to stop requesting animation frames.
- * @type {boolean}
- * @memberof FPSDisplay
- */
-FPSDisplay.active = false;
-
-/**
- * Frames per second.
- * @type {number}
- * @memberof FPSDisplay
- */
-FPSDisplay.fps = 0;
-
-/**
- * Total items.
- * @type {number}
- * @memberof FPSDisplay
- */
-FPSDisplay.totalItems = 0;
-
-/**
- * The current time.
- * @type {number}
- * @private
- * @memberof FPSDisplay
- */
-FPSDisplay._time = Date.now();
-
-/**
- * The time at the last frame.
- * @type {number}
- * @private
- * @memberof FPSDisplay
- */
-FPSDisplay._timeLastFrame = FPSDisplay._time;
-
-/**
- * The time the last second was sampled.
- * @type {number}
- * @private
- * @memberof FPSDisplay
- */
-FPSDisplay._timeLastSecond = FPSDisplay._time;
-
-/**
- * Holds the total number of frames
- * between seconds.
- * @type {number}
- * @private
- * @memberof FPSDisplay
- */
-FPSDisplay._frameCount = 0;
-
-/**
- * Initializes the FPSDisplay.
- * @function update
- * @memberof FPSDisplay
- */
-FPSDisplay.init = function() {
-
-  if (this.el) { // should only create one instance of FPSDisplay.
-    return;
-  }
-
-  this.active = true;
-
-  /**
-   * A reference to the DOM element containing the display.
-   * @private
-   */
-  this.el = document.createElement('div');
-  this.el.id = 'FPSDisplay';
-  this.el.className = 'fpsDisplay';
-  this.el.style.backgroundColor = 'black';
-  this.el.style.color = 'white';
-  this.el.style.fontFamily = 'Helvetica';
-  this.el.style.padding = '0.5em';
-  this.el.style.opacity = '0.5';
-  this.el.style.position = 'absolute';
-  this.el.style.top = 0;
-  this.el.style.right = 0;
-  this.el.style.left = 0;
-  this.el.style.zIndex = 1000;
-
-
-  // create totol elements label
-  var labelContainer = document.createElement('span');
-  labelContainer.className = 'fpsDisplayLabel';
-  labelContainer.style.marginLeft = '0.5em';
-  label = document.createTextNode('total elements: ');
-  labelContainer.appendChild(label);
-  this.el.appendChild(labelContainer);
-
-  // create textNode for totalElements
-  this.totalElementsValue = document.createTextNode('0');
-  this.el.appendChild(this.totalElementsValue);
-
-  // create fps label
-  labelContainer = document.createElement('span');
-  labelContainer.className = 'fpsDisplayLabel';
-  labelContainer.style.marginLeft = '0.5em';
-  var label = document.createTextNode('fps: ');
-  labelContainer.appendChild(label);
-  this.el.appendChild(labelContainer);
-
-  // create textNode for fps
-  this.fpsValue = document.createTextNode('0');
-  this.el.appendChild(this.fpsValue);
-
-  document.body.appendChild(this.el);
-
-};
-
-/**
- * If 1000ms have elapsed since the last evaluated second,
- * fps is assigned the total number of frames rendered and
- * its corresponding textNode is updated. The total number of
- * elements is also updated.
- *
- * @function update
- * @memberof FPSDisplay
- * @param {Number} [opt_totalItems] The total items in the system.
- */
-FPSDisplay.update = function(opt_totalItems) {
-
-  this.totalItems = opt_totalItems || 0;
-
-  this._time = Date.now();
-  this._frameCount++;
-
-  // at least a second has passed
-  if (this._time > this._timeLastSecond + 1000) {
-
-    this.fps = this._frameCount;
-    this._timeLastSecond = this._time;
-    this._frameCount = 0;
-
-    this.fpsValue.nodeValue = this.fps;
-    this.totalElementsValue.nodeValue = this.totalItems;
-  }
-};
-
-/**
- * Hides FPSDisplay from DOM.
- * @function hide
- * @memberof FPSDisplay
- */
-FPSDisplay.hide = function() {
-  this.el.style.display = 'none';
-  FPSDisplay.active = false;
-};
-
-/**
- * Shows FPSDisplay from DOM.
- * @function show
- * @memberof FPSDisplay
- */
-FPSDisplay.show = function() {
-  this.el.style.display = 'block';
-  FPSDisplay.active = true;
-};
-
-module.exports = FPSDisplay;
-
 },{}],8:[function(_dereq_,module,exports){
 /*jshint bitwise:false */
 /**
@@ -1878,8 +1910,8 @@ Vector.prototype.dot = function(vector) {
 module.exports = Vector;
 },{}],10:[function(_dereq_,module,exports){
 var Burner = _dereq_('burner');
-var Utils = _dereq_('drawing-utils-lib');
-var Vector = _dereq_('vector2d-lib');
+var Utils = _dereq_('burner').Utils;
+var Vector = _dereq_('burner').Vector;
 
 /**
  * Creates a new Base.
@@ -1923,7 +1955,7 @@ Base.prototype.configure = function(world) {
 
 module.exports = Base;
 
-},{"burner":2,"drawing-utils-lib":6,"vector2d-lib":9}],11:[function(_dereq_,module,exports){
+},{"burner":3}],11:[function(_dereq_,module,exports){
 /**
  * Robert Penner's easing functions. http://gizma.com/easing/
  * @namespace
@@ -2562,9 +2594,9 @@ Mover.prototype.getCSSText = function(props) {
 module.exports = Mover;
 
 
-},{"burner":2}],13:[function(_dereq_,module,exports){
+},{"burner":3}],13:[function(_dereq_,module,exports){
 module.exports=_dereq_(12)
-},{"burner":2}],14:[function(_dereq_,module,exports){
+},{"burner":3}],14:[function(_dereq_,module,exports){
 var Item = _dereq_('burner').Item,
     SimplexNoise = _dereq_('quietriot'),
     System = _dereq_('burner').System,
@@ -2760,7 +2792,7 @@ Oscillator.prototype.getCSSText = function(props) {
 
 module.exports = Oscillator;
 
-},{"burner":2,"quietriot":8}],15:[function(_dereq_,module,exports){
+},{"burner":3,"quietriot":8}],15:[function(_dereq_,module,exports){
 var Item = _dereq_('burner').Item,
     Mover = _dereq_('./Mover'),
     Utils = _dereq_('burner').Utils,
@@ -2898,13 +2930,15 @@ Particle.prototype.getCSSText = function(props) {
 module.exports = Particle;
 
 
-},{"./Mover":12,"burner":2}],16:[function(_dereq_,module,exports){
+},{"./Mover":12,"burner":3}],16:[function(_dereq_,module,exports){
 module.exports = {
   Base: _dereq_('./base'),
   Storm: _dereq_('./storm'),
+  //StormBit: require('./stormbit'),
   Spine: _dereq_('./spine'),
   Shell: _dereq_('./shell'),
-  Vortex: _dereq_('./vortex')
+  Vortex: _dereq_('./vortex'),
+  //VortexBit: require('./vortexbit')
 };
 
 },{"./base":10,"./shell":18,"./spine":19,"./storm":20,"./vortex":21}],17:[function(_dereq_,module,exports){
@@ -2938,7 +2972,7 @@ Mask.prototype.configure = function(props) {
 
 module.exports = Mask;
 
-},{"burner":2}],18:[function(_dereq_,module,exports){
+},{"burner":3}],18:[function(_dereq_,module,exports){
 /**
  * Creates a new Shell.
  *
@@ -2991,8 +3025,8 @@ module.exports = Spine;
 },{}],20:[function(_dereq_,module,exports){
 var ColorPalette = _dereq_('colorpalette');
 var System = _dereq_('burner').System;
-var Utils = _dereq_('drawing-utils-lib');
-var Vector = _dereq_('vector2d-lib');
+var Utils = _dereq_('burner').Utils;
+var Vector = _dereq_('burner').Vector;
 
 /**
  * Creates a new Storm.
@@ -3016,9 +3050,9 @@ function Storm(opt_options) {
   this.sizeMin = typeof options.sizeMin !== 'undefined' ? options.sizeMin : 1;
   this.sizeMax = typeof options.sizeMax !== 'undefined' ? options.sizeMax : 3;
   this.speedMin = typeof options.speedMin !== 'undefined' ? options.speedMin : 1;
-  this.speedMax = typeof options.speedMax !== 'undefined' ? options.speedMax : 20;
+  this.speedMax = typeof options.speedMax !== 'undefined' ? options.speedMax : 30;
   this.opacityMin = typeof options.opacityMin !== 'undefined' ? options.opacityMin : 0.1;
-  this.opacityMax = typeof options.opacityMax !== 'undefined' ? options.opacityMax : 0.2;
+  this.opacityMax = typeof options.opacityMax !== 'undefined' ? options.opacityMax : 0.7;
   this.lifespanMin = typeof options.lifespanMin !== 'undefined' ? options.lifespanMin : 70;
   this.lifespanMax = typeof options.lifespanMax !== 'undefined' ? options.lifespanMax : 120;
   this.colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 100;
@@ -3052,14 +3086,14 @@ Storm.prototype._beforeStep = function() {
 
     var accel = new Vector(1, 1);
     accel.normalize();
-    accel.mult(Utils.getRandomNumber(0.01, 0.1, true));
-    accel.rotate(Utils.degreesToRadians(Utils.getRandomNumber(150, 300)));
+    accel.mult(Utils.getRandomNumber(0.1, 1, true));
+    accel.rotate(Utils.degreesToRadians(Utils.getRandomNumber(140, 310)));
     this.acceleration = accel;
 
     var size = Utils.getRandomNumber(this.sizeMin, this.sizeMax, this.sizeMin || this.sizeMax);
     var maxSpeed = Utils.getRandomNumber(this.speedMin, this.speedMax, true);
     var opacity = Utils.getRandomNumber(this.opacityMin, this.opacityMax, true);
-    var lifespan = Utils.getRandomNumber(this.lifespanMin, this.lifespanMax);
+    var lifespan = Utils.getRandomNumber(this.lifespanMin, this.lifespanMax, true);
     var color = Utils.getRandomNumber(this.colorMin, this.colorMax);
 
     System.add('Particle', {
@@ -3075,7 +3109,6 @@ Storm.prototype._beforeStep = function() {
       opacity: opacity,
       lifespan: lifespan
     });
-
   }
 };
 
@@ -3092,13 +3125,13 @@ Storm.prototype.configure = function(opt_options) {
 
 module.exports = Storm;
 
-},{"burner":2,"colorpalette":5,"drawing-utils-lib":6,"vector2d-lib":9}],21:[function(_dereq_,module,exports){
+},{"burner":3,"colorpalette":6}],21:[function(_dereq_,module,exports){
 var Burner = _dereq_('burner');
 var Mover = _dereq_('./items/mover');
 var Oscillator = _dereq_('./items/oscillator');
 var Particle = _dereq_('./items/particle');
-var Utils = _dereq_('drawing-utils-lib');
-var Vector = _dereq_('vector2d-lib');
+var Utils = _dereq_('burner').Utils;
+var Vector = _dereq_('burner').Vector;
 var SimplexNoise = _dereq_('quietriot');
 var Easing = _dereq_('./easing');
 var Mask = _dereq_('./mask');
@@ -3283,6 +3316,6 @@ Vortex.prototype._getNoise = function() {
 
 module.exports = Vortex;
 
-},{"./easing":11,"./items/mover":13,"./items/oscillator":14,"./items/particle":15,"./mask":17,"burner":2,"drawing-utils-lib":6,"quietriot":8,"vector2d-lib":9}]},{},[16])
+},{"./easing":11,"./items/mover":13,"./items/oscillator":14,"./items/particle":15,"./mask":17,"burner":3,"quietriot":8}]},{},[16])
 (16)
 });

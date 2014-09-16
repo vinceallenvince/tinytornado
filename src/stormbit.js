@@ -1,10 +1,10 @@
 var ColorPalette = require('colorpalette');
-var System = require('burner').System;
+var System = require('bitshadowmachine').System;
 var Utils = require('burner').Utils;
 var Vector = require('burner').Vector;
 
 /**
- * Creates a new Storm.
+ * Creates a new StormBit.
  * @param {Object} [opt_options=] A map of initial properties.
  * @param {number} [opt_options.sizeMin = 1] Minimum particle size.
  * @param {number} [opt_options.sizeMax = 3] Maximum particle size.
@@ -18,20 +18,22 @@ var Vector = require('burner').Vector;
  * @param {number} [opt_options.colorMax = 200] Maximum color. Valid values bw 0 - 255.
  * @constructor
  */
-function Storm(opt_options) {
+function StormBit(opt_options) {
 
   var options = opt_options || {};
 
-  this.sizeMin = typeof options.sizeMin !== 'undefined' ? options.sizeMin : 1;
-  this.sizeMax = typeof options.sizeMax !== 'undefined' ? options.sizeMax : 3;
+  this.sizeMin = typeof options.sizeMin !== 'undefined' ? options.sizeMin : 0.1;
+  this.sizeMax = typeof options.sizeMax !== 'undefined' ? options.sizeMax : 1;
   this.speedMin = typeof options.speedMin !== 'undefined' ? options.speedMin : 1;
-  this.speedMax = typeof options.speedMax !== 'undefined' ? options.speedMax : 30;
-  this.opacityMin = typeof options.opacityMin !== 'undefined' ? options.opacityMin : 0.1;
-  this.opacityMax = typeof options.opacityMax !== 'undefined' ? options.opacityMax : 0.7;
+  this.speedMax = typeof options.speedMax !== 'undefined' ? options.speedMax : 10;
+  this.opacityMin = typeof options.opacityMin !== 'undefined' ? options.opacityMin : 0.3;
+  this.opacityMax = typeof options.opacityMax !== 'undefined' ? options.opacityMax : 1;
   this.lifespanMin = typeof options.lifespanMin !== 'undefined' ? options.lifespanMin : 70;
   this.lifespanMax = typeof options.lifespanMax !== 'undefined' ? options.lifespanMax : 120;
   this.colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 100;
   this.colorMax = typeof options.colorMax !== 'undefined' ? options.colorMax : 200;
+  this.rate = options.rate || 1;
+  this.fade = !!options.fade;
 
   this.width = 0;
   this.height = 0;
@@ -45,7 +47,7 @@ function Storm(opt_options) {
     startColor: this.startColor,
     endColor: this.endColor
   });
-
+  this.opacity = 0;
   this.beforeStep = this._beforeStep.bind(this);
 
 }
@@ -53,49 +55,49 @@ function Storm(opt_options) {
 /**
  * Called before each step function.
  * @private
- * @memberOf Storm
+ * @memberOf StormBit
  */
-Storm.prototype._beforeStep = function() {
+StormBit.prototype._beforeStep = function() {
 
-  if ((System.clock % 3) === 0) {
+  //if ((System.clock % this.rate) === 0) {
 
-    var accel = new Vector(1, 1);
-    accel.normalize();
-    accel.mult(Utils.getRandomNumber(0.1, 1, true));
-    accel.rotate(Utils.degreesToRadians(Utils.getRandomNumber(140, 310)));
-    this.acceleration = accel;
+    for (var i = 0; i < 2; i++) {
 
-    var size = Utils.getRandomNumber(this.sizeMin, this.sizeMax, this.sizeMin || this.sizeMax);
-    var maxSpeed = Utils.getRandomNumber(this.speedMin, this.speedMax, true);
-    var opacity = Utils.getRandomNumber(this.opacityMin, this.opacityMax, true);
-    var lifespan = Utils.getRandomNumber(this.lifespanMin, this.lifespanMax, true);
-    var color = Utils.getRandomNumber(this.colorMin, this.colorMax);
+      var accel = new Vector(1, 1);
+      accel.normalize();
+      accel.mult(Utils.getRandomNumber(0.01, 0.1, true));
+      accel.rotate(Utils.degreesToRadians(Utils.getRandomNumber(140, 310, true)));
+      this.acceleration = accel;
 
-    System.add('Particle', {
-      location: new Vector(this.parent.location.x, this.parent.location.y),
-      acceleration: accel,
-      width: 0,
-      height: 0,
-      borderWidth: 0,
-      boxShadowBlur: size * 10,
-      boxShadowSpread: size * 3,
-      boxShadowColor: this.pl.getColor(),
-      maxSpeed: maxSpeed,
-      opacity: opacity,
-      lifespan: lifespan
-    });
-  }
+      var size = Utils.getRandomNumber(this.sizeMin, this.sizeMax, this.sizeMin || this.sizeMax);
+      var maxSpeed = Utils.getRandomNumber(this.speedMin, this.speedMax, true);
+      var opacity = Utils.map(size, this.sizeMin, this.sizeMax, this.opacityMax, this.opacityMin);
+      var lifespan = Utils.getRandomNumber(this.lifespanMin, this.lifespanMax);
+      var color = Utils.getRandomNumber(this.colorMin, this.colorMax);
+
+      System.add('Particle', {
+        location: new Vector(this.parent.location.x, this.parent.location.y),
+        acceleration: accel,
+        scale: size,
+        maxSpeed: 0.15,
+        opacity: opacity,
+        fade: this.fade,
+        lifespan: lifespan
+      });
+
+    }
+  //}
 };
 
 /**
- * Configures an instance of Storm.
+ * Configures an instance of StormBit.
  * @param {Object} [opt_options=] A map of options.
- * @param {Object} [opt_options.parent = null] The storm's parent.
- * @memberOf Storm
+ * @param {Object} [opt_options.parent = null] The StormBit's parent.
+ * @memberOf StormBit
  */
-Storm.prototype.configure = function(opt_options) {
+StormBit.prototype.configure = function(opt_options) {
   var options = opt_options || {};
   this.parent = options.parent || null;
 };
 
-module.exports = Storm;
+module.exports = StormBit;
