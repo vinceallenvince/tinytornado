@@ -1,1428 +1,354 @@
-!function(e){if("object"==typeof exports)module.exports=e();else if("function"==typeof define&&define.amd)define(e);else{var n;"undefined"!=typeof window?n=window:"undefined"!=typeof global?n=global:"undefined"!=typeof self&&(n=self),n.TinyTornado=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
-/*jshint supernew:true */
-/** @namespace */
-var Utils = {
-  name: 'Utils'
+!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var n;"undefined"!=typeof window?n=window:"undefined"!=typeof global?n=global:"undefined"!=typeof self&&(n=self),n.TinyTornado=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+var BitShadowItems = {
+  Mover: require('./mover'),
+  Oscillator: require('./oscillator'),
+  Particle: require('./particle')
 };
 
-/**
- * Extends the properties and methods of a superClass onto a subClass.
- *
- * @function extend
- * @memberof Utils
- * @param {Object} subClass The subClass.
- * @param {Object} superClass The superClass.
- */
-Utils.extend = function(subClass, superClass) {
-  function F() {}
-  F.prototype = superClass.prototype;
-  subClass.prototype = new F;
-  subClass.prototype.constructor = subClass;
-  subClass._superClass = superClass.prototype;
-};
+// TODO: add...
+//Agent: require('./agent'),
+//Attractor: require('./attractor'),
+//Connector: require('./connector'),
+//Dragger: require('./dragger'),
+//FlowField: require('./flowfield'),
+//ParticleSystem: require('./particlesystem'),
+//Point: require('./point'),
+//RangeDisplay: require('./rangedisplay'),
+//Repeller: require('./repeller'),
+//Sensor: require('./sensor'),
+//Stimulus: require('./stimulus'),
+//Walker: require('./walker')
+
+module.exports = BitShadowItems;
+
+},{"./mover":2,"./oscillator":3,"./particle":4}],2:[function(require,module,exports){
+var Item = require('bitshadowmachine').Item,
+    System = require('bitshadowmachine').System,
+    Utils = require('bitshadowmachine').Utils,
+    Vector = require('bitshadowmachine').Vector;
 
 /**
- * Generates a psuedo-random number within an inclusive range.
+ * Creates a new Mover.
  *
- * @function getRandomNumber
- * @memberof Utils
- * @param {number} low The low end of the range.
- * @param {number} high The high end of the range.
- * @param {boolean} [flt] Set to true to return a float or when passing floats as a range.
- * @returns {number} A number.
- */
-Utils.getRandomNumber = function(low, high, flt) {
-  if (flt) {
-    return (Math.random() * (high - low)) + low;
-  }
-  high++;
-  return Math.floor((Math.random() * (high - low))) + low;
-};
-
-/**
- * Determines the size of the browser window.
+ * Movers are the root object for any item that moves. They are not
+ * aware of other Movers or stimuli. They have no means of locomotion
+ * and change only due to external forces. You will never directly
+ * implement Mover.
  *
- * @function extend
- * @memberof System
- * @returns {Object} The current browser window width and height.
- */
-Utils.getWindowSize = function() {
-
-  var d = {
-    'width' : false,
-    'height' : false
-  };
-
-  if (typeof(window.innerWidth) !== 'undefined') {
-    d.width = window.innerWidth;
-    d.height = window.innerHeight;
-  } else if (typeof(document.documentElement) !== 'undefined' &&
-      typeof(document.documentElement.clientWidth) !== 'undefined') {
-    d.width = document.documentElement.clientWidth;
-    d.height = document.documentElement.clientHeight;
-  } else if (typeof(document.body) !== 'undefined') {
-    d.width = document.body.clientWidth;
-    d.height = document.body.clientHeight;
-  }
-  return d;
-};
-
-/**
- * Re-maps a number from one range to another.
- *
- * @function map
- * @memberof Utils
- * @param {number} value The value to be converted.
- * @param {number} min1 Lower bound of the value's current range.
- * @param {number} max1 Upper bound of the value's current range.
- * @param {number} min2 Lower bound of the value's target range.
- * @param {number} max2 Upper bound of the value's target range.
- * @returns {number} A number.
- */
-Utils.map = function(value, min1, max1, min2, max2) { // returns a new value relative to a new range
-  var unitratio = (value - min1) / (max1 - min1);
-  return (unitratio * (max2 - min2)) + min2;
-};
-
-/**
- * Adds an event listener to a DOM element.
- *
- * @function _addEvent
- * @memberof System
- * @private
- * @param {Object} target The element to receive the event listener.
- * @param {string} eventType The event type.
- * @param {function} The function to run when the event is triggered.
- */
-Utils.addEvent = function(target, eventType, handler) {
-  if (target.addEventListener) { // W3C
-    target.addEventListener(eventType, handler, false);
-  } else if (target.attachEvent) { // IE
-    target.attachEvent('on' + eventType, handler);
-  }
-};
-
-/**
- * Converts degrees to radians.
- *
- * @function degreesToRadians
- * @memberof Utils
- * @param {number} degrees The degrees value to be converted.
- * @returns {number} A number in radians.
- */
-Utils.degreesToRadians = function(degrees) {
-  if (typeof degrees !== 'undefined') {
-    return 2 * Math.PI * (degrees/360);
-  } else {
-    if (typeof console !== 'undefined') {
-      throw new Error('Error: Utils.degreesToRadians is missing degrees param.');
-    }
-  }
-};
-
-/**
- * Converts radians to degrees.
- *
- * @function radiansToDegrees
- * @memberof Utils
- * @param {number} radians The radians value to be converted.
- * @returns {number} A number in degrees.
- */
-Utils.radiansToDegrees = function(radians) {
-  if (typeof radians !== 'undefined') {
-    return radians * (180/Math.PI);
-  } else {
-    if (typeof console !== 'undefined') {
-      throw new Error('Error: Utils.radiansToDegrees is missing radians param.');
-    }
-  }
-};
-
-/**
- * Constrain a value within a range.
- *
- * @function constrain
- * @memberof Utils
- * @param {number} val The value to constrain.
- * @param {number} low The lower bound of the range.
- * @param {number} high The upper bound of the range.
- * @returns {number} A number.
- */
-Utils.constrain = function(val, low, high) {
-  if (val > high) {
-    return high;
-  } else if (val < low) {
-    return low;
-  }
-  return val;
-};
-
-/**
- * Determines if one object is inside another.
- *
- * @function isInside
- * @memberof Utils
- * @param {Object} obj The object.
- * @param {Object} container The containing object.
- * @returns {boolean} Returns true if the object is inside the container.
- */
-Utils.isInside = function(obj, container) {
-  if (!obj || !container) {
-    throw new Error('isInside() requires both an object and a container.');
-  }
-
-  obj.width = obj.width || 0;
-  obj.height = obj.height || 0;
-  container.width = container.width || 0;
-  container.height = container.height || 0;
-
-  if (obj.location.x + obj.width / 2 > container.location.x - container.width / 2 &&
-    obj.location.x - obj.width / 2 < container.location.x + container.width / 2 &&
-    obj.location.y + obj.height / 2 > container.location.y - container.height / 2 &&
-    obj.location.y - obj.height / 2 < container.location.y + container.height / 2) {
-    return true;
-  }
-  return false;
-};
-
-/**
- * Capitalizes the first character in a string.
- *
- * @function capitalizeFirstLetter
- * @memberof Utils
- * @param {string} string The string to capitalize.
- * @returns {string} The string with the first character capitalized.
- */
-Utils.capitalizeFirstLetter = function(string) {
-  return string.charAt(0).toUpperCase() + string.slice(1);
-};
-
-module.exports = Utils;
-},{}],2:[function(_dereq_,module,exports){
-/*global exports, Vector */
-/*jshint supernew:true */
-
-
-/**
- * Creates a new Vector.
- *
- * @param {number} [opt_x = 0] The x location.
- * @param {number} [opt_y = 0] The y location.
  * @constructor
+ * @extends Item
  */
-function Vector(opt_x, opt_y) {
-  var x = opt_x || 0,
-      y = opt_y || 0;
-  this.x = x;
-  this.y = y;
-}
-
-/**
- * Subtract two vectors.
- *
- * @param {number} v1 The first vector.
- * @param {number} v2 The second vector.
- * @returns {Object} A new Vector.
- */
-Vector.VectorSub = function(v1, v2) {
-  return new Vector(v1.x - v2.x, v1.y - v2.y);
-};
-
-/**
- * Add two vectors.
- *
- * @param {number} v1 The first vector.
- * @param {number} v2 The second vector.
- * @returns {Object} A new Vector.
- */
-Vector.VectorAdd = function(v1, v2) {
-  return new Vector(v1.x + v2.x, v1.y + v2.y);
-};
-
-/**
- * Multiply a vector by a scalar value.
- *
- * @param {number} v A vector.
- * @param {number} n Vector will be multiplied by this number.
- * @returns {Object} A new Vector.
- */
-Vector.VectorMult = function(v, n) {
-  return new Vector(v.x * n, v.y * n);
-};
-
-/**
- * Divide two vectors.
- *
- * @param {number} v A vector.
- * @param {number} n Vector will be divided by this number.
- * @returns {Object} A new Vector.
- */
-Vector.VectorDiv = function(v, n) {
-  return new Vector(v.x / n, v.y / n);
-};
-
-/**
- * Calculates the distance between two vectors.
- *
- * @param {number} v1 The first vector.
- * @param {number} v2 The second vector.
- * @returns {number} The distance between the two vectors.
- */
-Vector.VectorDistance = function(v1, v2) {
-  return Math.sqrt(Math.pow(v2.x - v1.x, 2) + Math.pow(v2.y - v1.y, 2));
-};
-
-/**
- * Get the midpoint between two vectors.
- *
- * @param {number} v1 The first vector.
- * @param {number} v2 The second vector.
- * @returns {Object} A new Vector.
- */
-Vector.VectorMidPoint = function(v1, v2) {
-  return Vector.VectorAdd(v1, v2).div(2); // midpoint = (v1 + v2)/2
-};
-
-/**
- * Get the angle between two vectors.
- *
- * @param {number} v1 The first vector.
- * @param {number} v2 The second vector.
- * @returns {number} An angle.
- */
-Vector.VectorAngleBetween = function(v1, v2) {
-  var dot = v1.dot(v2),
-  theta = Math.acos(dot / (v1.mag() * v2.mag()));
-  return theta;
-};
-
-Vector.prototype.name = 'Vector';
-
-/**
-* Returns an new vector with all properties and methods of the
-* old vector copied to the new vector's prototype.
-*
-* @returns {Object} A vector.
-*/
-Vector.prototype.clone = function() {
-  function F() {}
-  F.prototype = this;
-  return new F;
-};
-
-/**
- * Adds a vector to this vector.
- *
- * @param {Object} vector The vector to add.
- * @returns {Object} This vector.
- */
-Vector.prototype.add = function(vector) {
-  this.x += vector.x;
-  this.y += vector.y;
-  return this;
-};
-
-/**
- * Subtracts a vector from this vector.
- *
- * @param {Object} vector The vector to subtract.
- * @returns {Object} This vector.
- */
-Vector.prototype.sub = function(vector) {
-  this.x -= vector.x;
-  this.y -= vector.y;
-  return this;
-};
-
-/**
- * Multiplies this vector by a passed value.
- *
- * @param {number} n Vector will be multiplied by this number.
- * @returns {Object} This vector.
- */
-Vector.prototype.mult = function(n) {
-  this.x *= n;
-  this.y *= n;
-  return this;
-};
-
-/**
- * Divides this vector by a passed value.
- *
- * @param {number} n Vector will be divided by this number.
- * @returns {Object} This vector.
- */
-Vector.prototype.div = function(n) {
-  this.x = this.x / n;
-  this.y = this.y / n;
-  return this;
-};
-
-/**
- * Calculates the magnitude of this vector.
- *
- * @returns {number} The vector's magnitude.
- */
-Vector.prototype.mag = function() {
-  return Math.sqrt((this.x * this.x) + (this.y * this.y));
-};
-
-/**
- * Limits the vector's magnitude.
- *
- * @param {number} opt_high The upper bound of the vector's magnitude
- * @param {number} opt_low The lower bound of the vector's magnitude.
- * @returns {Object} This vector.
- */
-Vector.prototype.limit = function(opt_high, opt_low) {
-  var high = opt_high || null,
-      low = opt_low || null;
-  if (high && this.mag() > high) {
-    this.normalize();
-    this.mult(high);
-  }
-  if (low && this.mag() < low) {
-    this.normalize();
-    this.mult(low);
-  }
-  return this;
-};
-
-/**
- * Divides a vector by its magnitude to reduce its magnitude to 1.
- * Typically used to retrieve the direction of the vector for later manipulation.
- *
- * @returns {Object} This vector.
- */
-Vector.prototype.normalize = function() {
-  var m = this.mag();
-  if (m !== 0) {
-    return this.div(m);
-  }
-};
-
-/**
- * Calculates the distance between this vector and a passed vector.
- *
- * @param {Object} vector The target vector.
- * @returns {Object} The distance between the two vectors.
- */
-Vector.prototype.distance = function(vector) {
-  return Math.sqrt(Math.pow(vector.x - this.x, 2) + Math.pow(vector.y - this.y, 2));
-};
-
-/**
- * Rotates a vector using a passed angle in radians.
- *
- * @param {number} radians The angle to rotate in radians.
- * @returns {Object} This vector.
- */
-Vector.prototype.rotate = function(radians) {
-  var cos = Math.cos(radians),
-    sin = Math.sin(radians),
-    x = this.x,
-    y = this.y;
-
-  this.x = x * cos - y * sin;
-  this.y = x * sin + y * cos;
-  return this;
-};
-
-/**
- * Calculates the midpoint between this vector and a passed vector.
- *
- * @param {Object} v1 The first vector.
- * @param {Object} v1 The second vector.
- * @returns {Object} A vector representing the midpoint between the passed vectors.
- */
-Vector.prototype.midpoint = function(vector) {
-  return Vector.VectorAdd(this, vector).div(2);
-};
-
-/**
- * Calulates the dot product.
- *
- * @param {Object} vector The target vector.
- * @returns {Object} A vector.
- */
-Vector.prototype.dot = function(vector) {
-  if (this.z && vector.z) {
-    return this.x * vector.x + this.y * vector.y + this.z * vector.z;
-  }
-  return this.x * vector.x + this.y * vector.y;
-};
-
-module.exports = Vector;
-},{}],3:[function(_dereq_,module,exports){
-/*global document */
-
-var Vector = _dereq_('vector2d-lib');
-
-/**
- * Creates a new Item.
- * @constructor
- * @param {string} opt_name The item's class name.
- */
-function Item() {
-  Item._idCount++;
-}
-
-/**
- * Holds a count of item instances.
- * @memberof Item
- * @private
- */
-Item._idCount = 0;
-
-/**
- * Holds a transform property based on supportedFeatures.
- * @memberof Item
- * @private
- */
-Item._stylePosition =
-    'transform: translate3d(<x>px, <y>px, 0) rotate(<angle>deg) scale(<scale>, <scale>); ' +
-    '-webkit-transform: translate3d(<x>px, <y>px, 0) rotate(<angle>deg) scale(<scale>, <scale>); ' +
-    '-moz-transform: translate3d(<x>px, <y>px, 0) rotate(<angle>deg) scale(<scale>, <scale>); ' +
-    '-o-transform: translate3d(<x>px, <y>px, 0) rotate(<angle>deg) scale(<scale>, <scale>); ' +
-    '-ms-transform: translate3d(<x>px, <y>px, 0) rotate(<angle>deg) scale(<scale>, <scale>);';
-
-/**
- * Resets all properties.
- * @function init
- * @memberof Item
- *
- * @param {Object} [opt_options=] A map of initial properties.
- * @param {number} [opt_options.name = 'Item'] The item's name.
- * @param {number} [opt_options.width = 10] Width.
- * @param {number} [opt_options.height = 10] Height.
- * @param {number} [opt_options.scale = 1] Scale.
- * @param {number} [opt_options.angle = 0] Angle.
- * @param {Array} [opt_options.colorMode = 'rgb'] Color mode. Possible values are 'rgb' and 'hsl'.
- * @param {Array} [opt_options.color = 200, 200, 200] Color.
- * @param {Array} [opt_options.borderWidth = 0] borderWidth.
- * @param {Array} [opt_options.borderStyle = 'none'] borderStyle.
- * @param {Array} [opt_options.borderColor = 255, 255, 255] borderColor.
- * @param {Array} [opt_options.borderRadius = 0] borderRadius.
- * @param {Array} [opt_options.boxShadowOffsetX = 0] boxShadowOffsetX.
- * @param {Array} [opt_options.boxShadowOffsetY = 0] boxShadowOffsetY.
- * @param {Array} [opt_options.boxShadowBlur = 0] boxShadowBlur.
- * @param {Array} [opt_options.boxShadowSpread = 0] boxShadowSpread.
- * @param {Array} [opt_options.boxShadowColor = 255, 255, 255] boxShadowColor.
- * @param {Array} [opt_options.opacity = 1] opacity.
- * @param {Array} [opt_options.zIndex = 0] zIndex.
- * @param {number} [opt_options.mass = 10] mass.
- * @param {Function|Object} [opt_options.acceleration = new Vector()] acceleration.
- * @param {Function|Object} [opt_options.velocity = new Vector()] velocity.
- * @param {Function|Object} [opt_options.location = new Vector()] location.
- * @param {number} [opt_options.maxSpeed = 10] maxSpeed.
- * @param {number} [opt_options.minSpeed = 0] minSpeed.
- * @param {bounciness} [opt_options.bounciness = 0] bounciness.
- * @param {number} [opt_options.life = 0] life.
- * @param {number} [opt_options.lifespan = -1] lifespan.
- * @param {boolean} [opt_options.checkWorldEdges = true] Set to true to check for world boundary collisions.
- * @param {boolean} [opt_options.wrapWorldEdges = false] Set to true to check for world boundary collisions and position item at the opposing boundary.
- * @param {Function} [opt_options.beforeStep = function() {}] This function will be called at the beginning of the item's step() function.
- * @param {Function} [opt_options.afterStep = function() {}] This function will be called at the end of the item's step() function.
- * @param {string} [opt_options.controlCamera = false] Set to true to set world's position relaive to this item.
- */
-Item.prototype.init = function(world, opt_options) {
-
-  if (!world || typeof world !== 'object') {
-    throw new Error('Item requires an instance of World.');
-  }
-
-  this.world = world;
-
-  var options = opt_options || {};
-
-  this.name = typeof this.name !== 'undefined' ? this.name :
-      options.name || 'Item';
-
-  this.width = typeof this.width !== 'undefined' ? this.width :
-      typeof options.width === 'undefined' ? 10 : options.width;
-
-  this.height = typeof this.height !== 'undefined' ? this.height :
-      typeof options.height === 'undefined' ? 10 : options.height;
-
-  this.scale = typeof this.scale !== 'undefined' ? this.scale :
-      typeof options.scale === 'undefined' ? 1 : options.scale;
-
-  this.angle = typeof this.angle !== 'undefined' ? this.angle :
-      options.angle || 0;
-
-  this.colorMode = typeof this.colorMode !== 'undefined' ? this.colorMode :
-      options.colorMode || 'rgb';
-
-  this.color = typeof this.color !== 'undefined' ? this.color :
-      options.color || [200, 200, 200];
-
-  this.borderWidth = typeof this.borderWidth !== 'undefined' ? this.borderWidth :
-      options.borderWidth || 0;
-
-  this.borderStyle = typeof this.borderStyle !== 'undefined' ? this.borderStyle :
-      options.borderStyle || 'none';
-
-  this.borderColor = typeof this.borderColor !== 'undefined' ? this.borderColor :
-      options.borderColor || [255, 255, 255];
-
-  this.borderRadius = typeof this.borderRadius !== 'undefined' ? this.borderRadius :
-      options.borderRadius || 0;
-
-  this.boxShadowOffsetX = typeof this.boxShadowOffsetX !== 'undefined' ? this.boxShadowOffsetX :
-      options.boxShadowOffsetX || 0;
-
-  this.boxShadowOffsetY = typeof this.boxShadowOffsetY !== 'undefined' ? this.boxShadowOffsetY :
-      options.boxShadowOffsetY || 0;
-
-  this.boxShadowBlur = typeof this.boxShadowBlur !== 'undefined' ? this.boxShadowBlur :
-      options.boxShadowBlur || 0;
-
-  this.boxShadowSpread = typeof this.boxShadowSpread !== 'undefined' ? this.boxShadowSpread :
-      options.boxShadowSpread || 0;
-
-  this.boxShadowColor = typeof this.boxShadowColor !== 'undefined' ? this.boxShadowColor :
-      options.boxShadowColor || [255, 255, 255];
-
-  this.opacity = typeof this.opacity !== 'undefined' ? this.opacity :
-      typeof options.opacity === 'undefined' ? 1 : options.opacity;
-
-  this.zIndex = typeof this.zIndex !== 'undefined' ? this.zIndex :
-      options.zIndex || 0;
-
-  this.visibility = typeof this.visibility !== 'undefined' ? this.visibility :
-      options.visibility || 'visible';
-
-  this.mass = typeof this.mass !== 'undefined' ? this.mass :
-      typeof options.mass === 'undefined' ? 10 : options.mass;
-
-  this.acceleration = typeof this.acceleration !== 'undefined' ? this.acceleration :
-      options.acceleration || new Vector();
-
-  this.velocity = typeof this.velocity !== 'undefined' ? this.velocity :
-      options.velocity || new Vector();
-
-  this.location = typeof this.location !== 'undefined' ? this.location :
-      options.location || new Vector(this.world.width / 2, this.world.height / 2);
-
-  this.maxSpeed = typeof this.maxSpeed !== 'undefined' ? this.maxSpeed :
-      typeof options.maxSpeed === 'undefined' ? 10 : options.maxSpeed;
-
-  this.minSpeed = typeof this.minSpeed !== 'undefined' ? this.minSpeed :
-      options.minSpeed || 0;
-
-  this.bounciness = typeof this.bounciness !== 'undefined' ? this.bounciness :
-      typeof options.bounciness === 'undefined' ? 0.5 : options.bounciness;
-
-  this.life = typeof this.life !== 'undefined' ? this.life :
-      options.life || 0;
-
-  this.lifespan = typeof this.lifespan !== 'undefined' ? this.lifespan :
-      typeof options.lifespan === 'undefined' ? -1 : options.lifespan;
-
-  this.checkWorldEdges = typeof this.checkWorldEdges !== 'undefined' ? this.checkWorldEdges :
-      typeof options.checkWorldEdges === 'undefined' ? true : options.checkWorldEdges;
-
-  this.wrapWorldEdges = typeof this.wrapWorldEdges !== 'undefined' ? this.wrapWorldEdges :
-      !!options.wrapWorldEdges;
-
-  this.beforeStep = typeof this.beforeStep !== 'undefined' ? this.beforeStep :
-      options.beforeStep || function() {};
-
-  this.afterStep = typeof this.afterStep !== 'undefined' ? this.afterStep :
-      options.afterStep || function() {};
-
-  this.controlCamera = typeof this.controlCamera !== 'undefined' ? this.controlCamera :
-      !!options.controlCamera;
-
-  this._force = this._force || new Vector();
-
-  this.id = this.name + Item._idCount;
-  if (!this.el) {
-    this.el = document.createElement('div');
-    this.el.id = this.id;
-    this.el.className = 'item ' + this.name.toLowerCase();
-    this.el.style.position = 'absolute';
-    this.el.style.top = '-5000px';
-    this.world.add(this.el);
-  }
-};
-
-/**
- * Applies forces to item.
- * @function step
- * @memberof Item
- */
-Item.prototype.step = function() {
-
-  var x = this.location.x,
-      y = this.location.y;
-
-  this.beforeStep.call(this);
-  this.applyForce(this.world.gravity);
-  this.applyForce(this.world.wind);
-  this.velocity.add(this.acceleration);
-  this.velocity.limit(this.maxSpeed, this.minSpeed);
-  this.location.add(this.velocity);
-  if (this.checkWorldEdges) {
-    this._checkWorldEdges();
-  } else if (this.wrapWorldEdges) {
-    this._wrapWorldEdges();
-  }
-  if (this.controlCamera) { // need the corrected velocity which is the difference bw old/new location
-    this._checkCameraEdges(x, y, this.location.x, this.location.y);
-  }
-  this.acceleration.mult(0);
-  this.afterStep.call(this);
-};
-
-/**
- * Adds a force to this object's acceleration.
- * @function applyForce
- * @memberof Item
- * @param {Object} force A Vector representing a force to apply.
- * @returns {Object} A Vector representing a new acceleration.
- */
-Item.prototype.applyForce = function(force) {
-  // calculated via F = m * a
-  if (force) {
-    this._force.x = force.x;
-    this._force.y = force.y;
-    this._force.div(this.mass);
-    this.acceleration.add(this._force);
-    return this.acceleration;
-  }
-};
-
-/**
- * Prevents object from moving beyond world bounds.
- * @function _checkWorldEdges
- * @memberof Item
- * @private
- */
-Item.prototype._checkWorldEdges = function() {
-
-  var worldRight = this.world.width,
-      worldBottom = this.world.height,
-      location = this.location,
-      velocity = this.velocity,
-      width = this.width * this.scale,
-      height = this.height * this.scale,
-      bounciness = this.bounciness;
-
-  if (location.x + width / 2 > worldRight) {
-    location.x = worldRight - width / 2;
-    velocity.x *= -1 * bounciness;
-  } else if (location.x < width / 2) {
-    location.x = width / 2;
-    velocity.x *= -1 * bounciness;
-  }
-
-  if (location.y + height / 2 > worldBottom) {
-    location.y = worldBottom - height / 2;
-    velocity.y *= -1 * bounciness;
-  } else if (location.y < height / 2) {
-    location.y = height / 2;
-    velocity.y *= -1 * bounciness;
-  }
-};
-
-/**
- * If item moves beyond world bounds, position's object at the opposite boundary.
- * @function _wrapWorldEdges
- * @memberof Item
- * @private
- */
-Item.prototype._wrapWorldEdges = function() {
-
-  var worldRight = this.world.width,
-      worldBottom = this.world.height,
-      location = this.location,
-      width = this.width * this.scale,
-      height = this.height * this.scale;
-
-  if (location.x - width / 2 > worldRight) {
-    location.x = -width / 2;
-  } else if (location.x < -width / 2) {
-    location.x = worldRight + width / 2;
-  }
-
-  if (location.y - height / 2 > worldBottom) {
-    location.y = -height / 2;
-  } else if (location.y < -height / 2) {
-    location.y = worldBottom + height / 2;
-  }
-};
-
-/**
- * Moves the world in the opposite direction of the Camera's controlObj.
- */
-Item.prototype._checkCameraEdges = function(lastX, lastY, x, y) {
-  this.world._camera.x = lastX - x;
-  this.world._camera.y = lastY - y;
-};
-
-/**
- * Updates the corresponding DOM element's style property.
- * @function draw
- * @memberof Item
- */
-Item.prototype.draw = function() {
-  var cssText = this.getCSSText({
-    x: this.location.x - (this.width / 2),
-    y: this.location.y - (this.height / 2),
-    angle: this.angle,
-    scale: this.scale || 1,
-    width: this.width,
-    height: this.height,
-    colorMode: this.colorMode,
-    color0: this.color[0],
-    color1: this.color[1],
-    color2: this.color[2],
-    opacity: this.opacity,
-    zIndex: this.zIndex,
-    visibility: this.visibility
-  });
-  this.el.style.cssText = cssText;
-};
-
-/**
- * Concatenates a new cssText string.
- *
- * @function getCSSText
- * @memberof Item
- * @param {Object} props A map of object properties.
- * @returns {string} A string representing cssText.
- */
-Item.prototype.getCSSText = function(props) {
-  return Item._stylePosition.replace(/<x>/g, props.x).replace(/<y>/g, props.y).replace(/<angle>/g, props.angle).replace(/<scale>/g, props.scale) + 'width: ' + props.width + 'px; height: ' + props.height + 'px; background-color: ' + props.colorMode + '(' + props.color0 + ', ' + props.color1 + (props.colorMode === 'hsl' ? '%' : '') + ', ' + props.color2 + (props.colorMode === 'hsl' ? '%' : '') + '); opacity: ' + props.opacity + '; z-index: ' + props.zIndex + '; visibility: ' + props.visibility + ';';
-};
-
-module.exports = Item;
-
-},{"vector2d-lib":2}],4:[function(_dereq_,module,exports){
-module.exports = {
-  Item: _dereq_('./item'),
-  System: _dereq_('./system'),
-  Utils: _dereq_('drawing-utils-lib'),
-  Vector: _dereq_('vector2d-lib'),
-  World: _dereq_('./world')
-};
-
-},{"./item":3,"./system":5,"./world":6,"drawing-utils-lib":1,"vector2d-lib":2}],5:[function(_dereq_,module,exports){
-/*global window, document */
-/*jshint supernew:true */
-
-var Item = _dereq_('./item'),
-    World = _dereq_('./world'),
-    Vector = _dereq_('vector2d-lib'),
-    Utils = _dereq_('drawing-utils-lib'),
-    FPSDisplay = _dereq_('fpsdisplay');
-
-window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
-                              window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
-
-/** @namespace */
-var System = {
-  name: 'System'
-};
-
-/**
- * Holds additional classes that can be defined at runtime.
- * @memberof System
- */
-System.Classes = {
-  'Item': Item
-};
-
-/**
- * Holds a vector describing the system gravity.
- * @memberof System
- */
-System.gravity = new Vector(0, 1);
-
-/**
- * Holds a vector describing the system wind.
- * @memberof System
- */
-System.wind = new Vector();
-
-/**
- * Stores references to all items in the system.
- * @memberof System
- * @private
- */
-System._records = [];
-
-/**
- * Stores references to all items removed from the system.
- * @memberof System
- * @private
- */
-System._pool = [];
-
-/**
- * Holds the current and last mouse/touch positions relative
- * to the browser window. Also, holds the current mouse velocity.
- * @public
- */
-System.mouse = {
-  location: new Vector(),
-  lastLocation: new Vector(),
-  velocity: new Vector()
-};
-
-/**
- * Increments with each call to System.loop.
- * @type {number}
- * @private
- */
-System.clock = 0;
-
-/**
- * System.loop() calls this function. Use to execute
- * a function in the animation loop outside of any items.
- * @type {Function}
- * @private
- */
-System.frameFunction = null;
-
- /**
-  * Call to execute any setup code before starting the animation loop.
-  * @function setup
-  * @param  {Object} opt_func   A function to run before the function exits.
-  * @memberof System
-  */
-System.setup = function(opt_func) {
-
-  var func = opt_func || function() {}, i, l, max;
-
-  document.body.onorientationchange = System.updateOrientation;
-
-  // save the current and last mouse position
-  Utils.addEvent(document, 'mousemove', System._recordMouseLoc);
-
-  // save the current and last touch position
-  Utils.addEvent(window, 'touchstart', System._recordMouseLoc);
-  Utils.addEvent(window, 'touchmove', System._recordMouseLoc);
-  Utils.addEvent(window, 'touchend', System._recordMouseLoc);
-
-  // listen for key up
-  Utils.addEvent(window, 'keyup', System._keyup);
-
-  // save the setup callback in case we need to reset the system.
-  System.setupFunc = func;
-
-  System.setupFunc.call(this);
-};
-
- /**
-  * Call to execute any setup code before starting the animation loop.
-  * Note: Deprecated in v3. Use setup();
-  * @function setup
-  * @param  {Object} opt_func   A function to run before the function exits.
-  * @param  {Object|Array} opt_worlds A instance or array of instances of World.
-  * @memberof System
-  */
-System.init = function(opt_func, opt_worlds) {
-  System.setup(opt_func, opt_worlds);
-};
-
-/**
- * Adds world to System records and worlds cache.
- *
- * @function _addWorld
- * @memberof System
- * @private
- * @param {Object} world An instance of World.
- */
-System._addWorld = function(world) {
-  System._records.push(world);
-};
-
-/**
- * Adds instances of class to _records and calls init on them.
- * @function add
- * @memberof System
- * @param {string} [opt_klass = 'Item'] The name of the class to add.
- * @param {Object} [opt_options=] A map of initial properties.
- * @param {Object} [opt_world = System._records[0]] An instance of World to contain the item.
- * @returns {Object} An instance of the added item.
- */
-System.add = function(opt_klass, opt_options, opt_world) {
-
-  var klass = opt_klass || 'Item',
-      options = opt_options || {},
-      world = opt_world || System.firstWorld(),
-      records = this._records, obj;
-
-  // recycle object if one is available; obj must be an instance of the same class
-  for (var i = 0, max = System._pool.length; i < max; i++) {
-    if (System._pool[i].name === klass) {
-      obj = System._cleanObj(System._pool.splice(i, 1)[0]);
-      break;
-    }
-  }
-
-  if (!obj) {
-    if (klass.toLowerCase() === 'world') {
-      obj = new World(options);
-    } else if (System.Classes[klass]) {
-      obj = new System.Classes[klass](options);
-    } else {
-      obj = new Item();
-    }
-  }
-
-  options.name = klass;
-  obj.init(world, options);
-  records.push(obj);
-  return obj;
-};
-
-/**
- * Removes all properties from the passed object.
- * @param  {Object} obj An object.
- * @return {Object}     The passed object.
- */
-System._cleanObj = function(obj) {
-  for (var prop in obj) {
-    if (obj.hasOwnProperty(prop)) {
-      delete obj[prop];
-    }
-  }
-  return obj;
-};
-
-/**
- * Removes an item from the system.
- * @function remove
- * @memberof System
- * @param {Object} obj The item to remove.
- */
-System.remove = function (obj) {
-
-  var i, max, records = System._records;
-
-  for (i = 0, max = records.length; i < max; i++) {
-    if (records[i].id === obj.id) {
-      if (records[i].el) {
-        records[i].el.style.visibility = 'hidden'; // hide item
-      }
-      System._pool[System._pool.length] = records.splice(i, 1)[0]; // move record to pool array
-      break;
-    }
-  }
-};
-
-/**
- * Removes an item from the system.
- * Note: Deprecated in v3. Use remove().
- * @function remove
- * @memberof System
- * @param {Object} obj The item to remove.
- */
-System.destroy = function (obj) {
-  System.remove(obj);
-};
-
-/**
- * Iterates over records.
- * @param {Function} [opt_function=function(){}] A function.
- * @function loop
- * @memberof System
- */
-System.loop = function(opt_function) {
-
-  var i, records = System._records,
-      len = System._records.length,
-      frameFunction = opt_function || function() {};
-
-  if (!System.frameFunction) {
-    System.frameFunction = frameFunction;
-  }
-
-  for (i = len - 1; i >= 0; i -= 1) {
-
-    if (records[i] && records[i].step && !records[i].world.pauseStep) {
-
-      if (records[i].life < records[i].lifespan) {
-        records[i].life += 1;
-      } else if (records[i].lifespan !== -1) {
-        System.remove(records[i]);
-        continue;
-      }
-      records[i].step();
-    }
-  }
-  len = System._records.length; // check length in case items were removed in step()
-  for (i = len - 1; i >= 0; i -= 1) {
-    records[i].draw();
-  }
-  System.clock++;
-  if (FPSDisplay.active) {
-    FPSDisplay.update(len);
-  }
-  System.frameFunction.call(this);
-  if (typeof window.requestAnimationFrame !== 'undefined') {
-    window.requestAnimationFrame(System.loop);
-  }
-};
-
-/**
- * Pauses the system and processes one step in records.
- *
- * @function _stepForward
- * @memberof System
- * @private
- */
-System._stepForward = function() {
-
-  var i, j, max, records = System._records,
-      world, worlds = System.allWorlds();
-
-  for (i = 0, max = worlds.length; i < max; i++) {
-    world = worlds[i];
-    world.pauseStep = true;
-    for (j = records.length - 1; j >= 0; j -= 1) {
-      if (records[j].step) {
-        records[j].step();
-      }
-    }
-    for (j = records.length - 1; j >= 0; j -= 1) {
-      if (records[j].draw) {
-        records[j].draw();
-      }
-    }
-  }
-  System.clock++;
-};
-
-/**
- * Saves the mouse/touch location relative to the browser window.
- *
- * @function _recordMouseLoc
- * @memberof System
- * @private
- */
-System._recordMouseLoc = function(e) {
-
-  var touch, world = System.firstWorld();
-
-  System.mouse.lastLocation.x = System.mouse.location.x;
-  System.mouse.lastLocation.y = System.mouse.location.y;
-
-  if (e.changedTouches) {
-    touch = e.changedTouches[0];
-  }
-
-  /**
-   * Mapping window size to world size allows us to
-   * lead an agent around a world that's not bound
-   * to the window.
-   */
-  if (e.pageX && e.pageY) {
-    System.mouse.location.x = Utils.map(e.pageX, 0, window.innerWidth, 0, world.width);
-    System.mouse.location.y = Utils.map(e.pageY, 0, window.innerHeight, 0, world.height);
-  } else if (e.clientX && e.clientY) {
-    System.mouse.location.x = Utils.map(e.clientX, 0, window.innerWidth, 0, world.width);
-    System.mouse.location.y = Utils.map(e.clientY, 0, window.innerHeight, 0, world.height);
-  } else if (touch) {
-    System.mouse.location.x = touch.pageX;
-    System.mouse.location.y = touch.pageY;
-  }
-
-  System.mouse.velocity.x = System.mouse.lastLocation.x - System.mouse.location.x;
-  System.mouse.velocity.y = System.mouse.lastLocation.y - System.mouse.location.y;
-};
-
-/**
- * Returns the first world in the system.
- *
- * @function firstWorld
- * @memberof System
- * @returns {null|Object} An instance of World.
- */
-System.firstWorld = function() {
-  return this._records.length ? this._records[0] : null;
-};
-
-/**
- * Returns all worlds.
- *
- * @function allWorlds
- * @memberof System
- * @return {Array.<World>} An array of worlds.
- */
-System.allWorlds = function() {
-  return System.getAllItemsByName('World');
-};
-
-/**
- * Returns an array of items created from the same constructor.
- *
- * @function getAllItemsByName
- * @memberof System
- * @param {string} name The 'name' property.
- * @param {Array} [opt_list = this._records] An optional list of items.
- * @returns {Array} An array of items.
- */
-System.getAllItemsByName = function(name, opt_list) {
-
-  var i, max, arr = [],
-      list = opt_list || this._records;
-
-  for (i = 0, max = list.length; i < max; i++) {
-    if (list[i].name === name) {
-      arr[arr.length] = list[i];
-    }
-  }
-  return arr;
-};
-
-/**
- * Returns an array of items with an attribute that matches the
- * passed 'attr'. If 'opt_val' is passed, 'attr' must equal 'val'.
- *
- * @function getAllItemsByAttribute
- * @memberof System
- * @param {string} attr The property to match.
- * @param {*} [opt_val=] The 'attr' parameter must equal this param.
- * @param {string} name The item's name property must equal this param.
- * @returns {Array} An array of items.
- */
-System.getAllItemsByAttribute = function(attr, opt_val, opt_name) { // TODO: add test
-
-  var i, max, arr = [], records = this._records,
-      val = typeof opt_val !== 'undefined' ? opt_val : null,
-      name = opt_name || false;
-
-  for (i = 0, max = records.length; i < max; i++) {
-    if (typeof records[i][attr] !== 'undefined') {
-      if (val !== null && records[i][attr] !== val) {
-        continue;
-      }
-      if (name && records[i].name !== name) {
-        continue;
-      }
-      arr[arr.length] = records[i];
-    }
-  }
-  return arr;
-};
-
-/**
- * Handles orientation evenst and forces the world to update its bounds.
- *
- * @function updateOrientation
- * @memberof System
- */
-System.updateOrientation = function() {
-  var worlds = System.allWorlds(),
-  i, max, l = worlds.length;
-  for (i = 0; i < l; i++) {
-    worlds[i].width = worlds[i].el.scrollWidth;
-    worlds[i].height = worlds[i].el.scrollHeight;
-  }
-};
-
-/**
- * Handles keyup events.
- *
- * @function _keyup
- * @memberof System
- * @private
- * @param {Object} e An event.
- */
-System._keyup = function(e) {
-
-  var i, max, world, worlds = System.allWorlds();
-
-  switch(e.keyCode) {
-    case 39:
-      System._stepForward();
-      break;
-    case 80: // p; pause/play
-      for (i = 0, max = worlds.length; i < max; i++) {
-        world = worlds[i];
-        world.pauseStep = !world.pauseStep;
-      }
-      break;
-    case 82: // r; reset
-      System._resetSystem();
-      break;
-    case 83: // s; reset
-      System._toggleFPS();
-      break;
-  }
-};
-
-/**
- * Resets the system.
- *
- * @function _resetSystem
- * @memberof System
- * @private
- */
-System._resetSystem = function() {
-
-  var i, max, world, worlds = System.allWorlds();
-
-  for (i = 0, max = worlds.length; i < max; i++) {
-    world = worlds[i];
-    world.pauseStep = false;
-    world.pauseDraw = false;
-
-    while(world.el.firstChild) {
-      world.el.removeChild(world.el.firstChild);
-    }
-  }
-
-  System._records = [];
-  System._pool = [];
-  System.clock = 0;
-  System.setup(System.setupFunc);
-};
-
-/**
- * Toggles stats display.
- *
- * @function _toggleFPS
- * @memberof System
- * @private
- */
-System._toggleFPS = function() {
-  if (!FPSDisplay.fps) {
-    FPSDisplay.init();
-  } else {
-    FPSDisplay.active = !FPSDisplay.active;
-  }
-
-  if (!FPSDisplay.active) {
-    FPSDisplay.hide();
-  } else {
-    FPSDisplay.show();
-  }
-};
-
-module.exports = System;
-
-},{"./item":3,"./world":6,"drawing-utils-lib":1,"fpsdisplay":7,"vector2d-lib":2}],6:[function(_dereq_,module,exports){
-var Vector = _dereq_('vector2d-lib'),
-    Item = _dereq_('./item'),
-    Utils = _dereq_('drawing-utils-lib');
-
-/**
- * Creates a new World.
- *
- * @param {Object} [opt_options=] A map of initial properties.
- * @constructor
- */
-function World(opt_options) {
-
+function Mover() {
   Item.call(this);
-
-  var options = opt_options || {};
-
-  this.el = options.el || document.body;
-  this.name = 'World';
-
-  /**
-   * Worlds do not have worlds. However, assigning an
-   * object literal makes for less conditions in the
-   * update loop.
-   */
-  this.world = {};
 }
-Utils.extend(World, Item);
+Utils.extend(Mover, Item);
 
 /**
- * Resets all properties.
- * @function init
- * @memberof World
- *
- * @param {Object} [opt_options=] A map of initial properties.
- * @param {number} [opt_options.width = this.el.scrollWidth] Width.
- * @param {number} [opt_options.height = this.el.scrollHeight] Height.
- *
+ * Initializes an instance of Mover.
+ * @param  {Object} world An instance of World.
+ * @param  {Object} opt_options A map of initial properties.
+ * @param {string|Array} [opt_options.color = 255, 255, 255] Color.
+ * @param {number} [opt_options.borderRadius = 100] Border radius.
+ * @param {number} [opt_options.borderWidth = 2] Border width.
+ * @param {string} [opt_options.borderStyle = 'solid'] Border style.
+ * @param {Array} [opt_options.borderColor = 60, 60, 60] Border color.
+ * @param {boolean} [opt_options.pointToDirection = true] If true, object will point in the direction it's moving.
+ * @param {Object} [opt_options.parent = null] A parent object. If set, object will be fixed to the parent relative to an offset distance.
+ * @param {boolean} [opt_options.pointToParentDirection = true] If true, object points in the direction of the parent's velocity.
+ * @param {number} [opt_options.offsetDistance = 30] The distance from the center of the object's parent.
+ * @param {number} [opt_options.offsetAngle = 0] The rotation around the center of the object's parent.
+ * @param {function} [opt_options.afterStep = null] A function to run after the step() function.
+ * @param {function} [opt_options.isStatic = false] Set to true to prevent object from moving.
+ * @param {Object} [opt_options.parent = null] Attach to another Flora object.
  */
-World.prototype.init = function(world, opt_options) {
-
-  World._superClass.init.call(this, this.world, opt_options);
+Mover.prototype.init = function(world, opt_options) {
+  Mover._superClass.init.call(this, world, opt_options);
 
   var options = opt_options || {};
 
-  this.color = options.color || [0, 0, 0];
-  this.width = options.width || this.el.scrollWidth;
-  this.height = options.height || this.el.scrollHeight;
-  this.location = options.location || new Vector(document.body.scrollWidth / 2, document.body.scrollHeight / 2);
+  this.color = options.color || [255, 255, 255];
+  this.borderRadius = options.borderRadius || 0;
   this.borderWidth = options.borderWidth || 0;
   this.borderStyle = options.borderStyle || 'none';
   this.borderColor = options.borderColor || [0, 0, 0];
-  this.gravity = options.gravity || new Vector(0, 1);
-  this.c = typeof options.c !== 'undefined' ? options.c : 0.1;
-  this.pauseStep = !!options.pauseStep;
-  this.pauseDraw = !!options.pauseDraw;
-  this.el.className = this.name.toLowerCase();
-  this._camera = this._camera || new Vector();
+  this.pointToDirection = typeof options.pointToDirection === 'undefined' ? true : options.pointToDirection;
+  this.parent = options.parent || null;
+  this.pointToParentDirection = typeof options.pointToParentDirection === 'undefined' ? true : options.pointToParentDirection;
+  this.offsetDistance = typeof options.offsetDistance === 'undefined' ? 0 : options.offsetDistance;
+  this.offsetAngle = options.offsetAngle || 0;
+  this.isStatic = !!options.isStatic;
+
+  this._friction = new Vector();
 };
 
-/**
- * Adds an item to the world's view.
- * @param {Object} item An instance of item.
- */
-World.prototype.add = function(item) {
-  this.el.appendChild(item);
+Mover.prototype.step = function() {
+
+  var i, max, x = this.location.x,
+      y = this.location.y;
+
+  this.beforeStep.call(this);
+
+  if (this.isStatic) {
+    return;
+  }
+
+  // start apply forces
+
+  if (this.world.c) { // friction
+    this._friction.x = this.velocity.x;
+    this._friction.y = this.velocity.y;
+    this._friction.mult(-1);
+    this._friction.normalize();
+    this._friction.mult(this.world.c);
+    this.applyForce(this._friction);
+  }
+  this.applyForce(this.world.gravity); // gravity
+
+  // attractors
+  var attractors = System.getAllItemsByName('Attractor');
+  for (i = 0, max = attractors.length; i < max; i += 1) {
+    if (this.id !== attractors[i].id) {
+      this.applyForce(attractors[i].attract(this));
+    }
+  }
+
+  // repellers
+  var repellers = System.getAllItemsByName('Repeller');
+  for (i = 0, max = repellers.length; i < max; i += 1) {
+    if (this.id !== repellers[i].id) {
+      this.applyForce(repellers[i].attract(this));
+    }
+  }
+
+  // draggers
+  var draggers = System.getAllItemsByName('Dragger');
+  for (i = 0, max = draggers.length; i < max; i += 1) {
+    if (this.id !== draggers[i].id && Utils.isInside(this, draggers[i])) {
+      this.applyForce(draggers[i].drag(this));
+    }
+  }
+
+  if (this.applyAdditionalForces) {
+    this.applyAdditionalForces.call(this);
+  }
+
+  this.velocity.add(this.acceleration); // add acceleration
+
+  this.velocity.limit(this.maxSpeed, this.minSpeed);
+
+  this.location.add(this.velocity); // add velocity
+
+  if (this.pointToDirection) { // object rotates toward direction
+    if (this.velocity.mag() > 0.1) {
+      this.angle = Utils.radiansToDegrees(Math.atan2(this.velocity.y, this.velocity.x));
+    }
+  }
+
+  if (this.wrapWorldEdges) {
+    this._wrapWorldEdges();
+  } else if (this.checkWorldEdges) {
+    this._checkWorldEdges();
+  }
+
+  if (this.controlCamera) {
+    this._checkCameraEdges(x, y, this.location.x, this.location.y);
+  }
+
+  if (this.parent) { // parenting
+
+    if (this.offsetDistance) {
+
+      r = this.offsetDistance; // use angle to calculate x, y
+      theta = Utils.degreesToRadians(this.parent.angle + this.offsetAngle);
+      x = r * Math.cos(theta);
+      y = r * Math.sin(theta);
+
+      this.location.x = this.parent.location.x;
+      this.location.y = this.parent.location.y;
+      this.location.add(new Vector(x, y)); // position the child
+
+      if (this.pointToParentDirection) {
+        this.angle = Utils.radiansToDegrees(Math.atan2(this.parent.velocity.y, this.parent.velocity.x));
+      }
+
+    } else {
+      this.location.x = this.parent.location.x;
+      this.location.y = this.parent.location.y;
+    }
+  }
+
+  this.acceleration.mult(0);
+
+  if (this.life < this.lifespan) {
+    this.life += 1;
+  } else if (this.lifespan !== -1) {
+    System.remove(this);
+    return;
+  }
+
+  this.afterStep.call(this);
 };
 
-/**
- * Applies forces to world.
- * @function step
- * @memberof World
- */
-World.prototype.step = function() {
-  this.location.add(this._camera);
+module.exports = Mover;
+
+},{"bitshadowmachine":9}],3:[function(require,module,exports){
+var Item = require('bitshadowmachine').Item,
+    SimplexNoise = require('quietriot'),
+    System = require('bitshadowmachine').System,
+    Utils = require('bitshadowmachine').Utils,
+    Vector = require('bitshadowmachine').Vector;
+
+function Oscillator(opt_options) {
+  Item.call(this);
+}
+Utils.extend(Oscillator, Item);
+
+Oscillator.prototype.init = function(world, opt_options) {
+  Oscillator._superClass.init.call(this, world, opt_options);
+
+  var options = opt_options || {};
+
+  this.acceleration = options.acceleration || new Vector(0.01, 0);
+  this.aVelocity = options.aVelocity || new Vector();
+  this.isStatic = !!options.isStatic;
+  this.perlin = !!options.perlin;
+  this.perlinSpeed = typeof options.perlinSpeed === 'undefined' ? 0.005 : options.perlinSpeed;
+  this.perlinTime = options.perlinTime || 0;
+  this.perlinAccelLow = typeof options.perlinAccelLow === 'undefined' ? -2 : options.perlinAccelLow;
+  this.perlinAccelHigh = typeof options.perlinAccelHigh === 'undefined' ? 2 : options.perlinAccelHigh;
+  this.perlinOffsetX = typeof options.perlinOffsetX === 'undefined' ? Math.random() * 10000 : options.perlinOffsetX;
+  this.perlinOffsetY = typeof options.perlinOffsetY === 'undefined' ? Math.random() * 10000 : options.perlinOffsetY;
+  this.color = options.color || [200, 100, 0];
+  this.opacity = typeof options.opacity === 'undefined' ? 0.75 : options.opacity;
+  this.zIndex = typeof options.zIndex === 'undefined' ? 1 : options.zIndex;
+  this.parent = options.parent || null;
+  this.pointToDirection = !!options.pointToDirection;
+
+  //
+
+  this.lastLocation = new Vector();
+  this.amplitude = options.amplitude || new Vector(this.world.width / 2,
+      this.world.height / 2);
+  this.initialLocation = options.initialLocation ||
+    new Vector(this.world.width / 2, this.world.height / 2);
+  this.location.x = this.initialLocation.x;
+  this.location.y = this.initialLocation.y;
 };
 
-/**
- * Updates the corresponding DOM element's style property.
- * @function draw
- * @memberof World
- */
-World.prototype.draw = function() {
-  var cssText = this.getCSSText({
-    x: this.location.x - (this.width / 2),
-    y: this.location.y - (this.height / 2),
-    angle: this.angle,
-    scale: this.scale || 1,
-    width: this.width,
-    height: this.height,
-    color0: this.color[0],
-    color1: this.color[1],
-    color2: this.color[2],
-    borderWidth: this.borderWidth,
-    borderStyle: this.borderStyle,
-    borderColor1: this.borderColor[0],
-    borderColor2: this.borderColor[1],
-    borderColor3: this.borderColor[2]
-  });
-  this.el.style.cssText = cssText;
+Oscillator.prototype.step = function () {
+
+  this.beforeStep.call(this);
+
+  if (this.isStatic) {
+    return;
+  }
+
+  if (this.perlin) {
+    this.perlinTime += this.perlinSpeed;
+    this.aVelocity.x =  Utils.map(SimplexNoise.noise(this.perlinTime + this.perlinOffsetX, 0), -1, 1, this.perlinAccelLow, this.perlinAccelHigh);
+    this.aVelocity.y =  Utils.map(SimplexNoise.noise(0, this.perlinTime + this.perlinOffsetY), -1, 1, this.perlinAccelLow, this.perlinAccelHigh);
+  } else {
+    this.aVelocity.add(this.acceleration); // add acceleration
+  }
+
+  if (this.parent) { // parenting
+    this.initialLocation.x = this.parent.location.x;
+    this.initialLocation.y = this.parent.location.y;
+  }
+
+  this.location.x = this.initialLocation.x + Math.cos(this.aVelocity.x) * this.amplitude.x;
+  this.location.y = this.initialLocation.y + Math.sin(this.aVelocity.y) * this.amplitude.y;
+
+  if (this.pointToDirection) { // object rotates toward direction
+      velDiff = Vector.VectorSub(this.location, this.lastLocation);
+      this.angle = Utils.radiansToDegrees(Math.atan2(velDiff.y, velDiff.x));
+  }
+
+  if (this.life < this.lifespan) {
+    this.life += 1;
+  } else if (this.lifespan !== -1) {
+    System.remove(this);
+  }
+
+  this.afterStep.call(this);
+
+  this.lastLocation.x = this.location.x;
+  this.lastLocation.y = this.location.y;
 };
 
+module.exports = Oscillator;
+
+},{"bitshadowmachine":9,"quietriot":21}],4:[function(require,module,exports){
+var Item = require('bitshadowmachine').Item,
+    Mover = require('./mover'),
+    Utils = require('bitshadowmachine').Utils,
+    Vector = require('bitshadowmachine').Vector;
+
 /**
- * Concatenates a new cssText string.
+ * Creates a new Particle object.
  *
- * @function getCSSText
- * @memberof World
- * @param {Object} props A map of object properties.
- * @returns {string} A string representing cssText.
+ * @constructor
+ * @extends Mover
  */
-World.prototype.getCSSText = function(props) {
-  return Item._stylePosition.replace(/<x>/g, props.x).replace(/<y>/g, props.y).replace(/<angle>/g, props.angle).replace(/<scale>/g, props.scale) + 'width: ' + props.width + 'px; height: ' + props.height + 'px; background-color: rgb(' + props.color0 + ', ' + props.color1 + ', ' + props.color2 + '); border: ' + props.borderWidth + 'px ' + props.borderStyle + ' rgb(' + props.borderColor1 + ', ' + props.borderColor2 + ', ' + props.borderColor3 + ')';
+function Particle(opt_options) {
+  Mover.call(this);
+}
+Utils.extend(Particle, Mover);
+
+/**
+ * Initializes Particle.
+ * @param  {Object} world An instance of World.
+ * @param  {Object} [opt_options=] A map of initial properties.
+ * @param {Array} [opt_options.color = [200, 200, 200]] Color.
+ * @param {number} [opt_options.lifespan = 50] The max life of the object. Set to -1 for infinite life.
+ * @param {number} [opt_options.life = 0] The current life value. If greater than this.lifespan, object is destroyed.
+ * @param {boolean} {opt_options.fade = true} If true, opacity decreases proportionally with life.
+ * @param {boolean} {opt_options.shrink = true} If true, width and height decrease proportionally with life.
+ * @param {boolean} [opt_options.checkWorldEdges = false] Set to true to check the object's location against the world's bounds.
+ * @param {number} [opt_options.maxSpeed = 4] Maximum speed.
+ * @param {number} [opt_options.zIndex = 1] The object's zIndex.
+ */
+Particle.prototype.init = function(world, opt_options) {
+  Particle._superClass.init.call(this, world, opt_options);
+
+  var options = opt_options || {};
+
+  this.color = options.color || [200, 200, 200];
+  this.lifespan = typeof options.lifespan === 'undefined' ? 50 : options.lifespan;
+  this.life = options.life || 0;
+  this.fade = typeof options.fade === 'undefined' ? true : options.fade;
+  this.shrink = typeof options.shrink === 'undefined' ? true : options.shrink;
+  this.checkWorldEdges = !!options.checkWorldEdges;
+  this.maxSpeed = typeof options.maxSpeed === 'undefined' ? 4 : options.maxSpeed;
+  this.zIndex = typeof options.zIndex === 'undefined' ? 1 : options.zIndex;
+
+  if (!options.acceleration) {
+    this.acceleration = new Vector(1, 1);
+    this.acceleration.normalize();
+    this.acceleration.mult(this.maxSpeed ? this.maxSpeed : 3);
+    this.acceleration.rotate(Utils.getRandomNumber(0, Math.PI * 2, true));
+  }
+  if (!options.velocity) {
+    this.velocity = new Vector();
+  }
+  this.initScale = this.scale;
 };
 
-module.exports = World;
+/**
+ * Applies additional forces.
+ */
+Particle.prototype.afterStep = function() {
+  if (this.fade) {
+    this.opacity = Utils.map(this.life, 0, this.lifespan, 1, 0);
+  }
+  if (this.shrink) {
+    this.scale = Utils.map(this.life, 0, this.lifespan, this.initScale, 0);
+  }
+};
 
-},{"./item":3,"drawing-utils-lib":1,"vector2d-lib":2}],7:[function(_dereq_,module,exports){
+module.exports = Particle;
+
+},{"./mover":2,"bitshadowmachine":9}],5:[function(require,module,exports){
 /*global document, window */
 
 /**
@@ -1613,142 +539,11 @@ FPSDisplay.show = function() {
 
 module.exports = FPSDisplay;
 
-},{}],8:[function(_dereq_,module,exports){
-/*jshint bitwise:false */
-/**
-* https://gist.github.com/304522
-* Ported from Stefan Gustavson's java implementation
-* http://staffwww.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf
-* Read Stefan's excellent paper for details on how this code works.
-*
-* @author Sean McCullough banksean@gmail.com
-*
-* You can pass in a random number generator object if you like.
-* It is assumed to have a random() method.
-*/
-
-/**
- * @namespace
- */
-
-var SimplexNoise = {};
-
-SimplexNoise.grad3 = [[1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],[1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],[0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]];
-SimplexNoise.p = [];
-SimplexNoise.perm = [];
-// A lookup table to traverse the simplex around a given point in 4D.
-// Details can be found where this table is used, in the 4D noise method.
-SimplexNoise.simplex = [
-  [0,1,2,3],[0,1,3,2],[0,0,0,0],[0,2,3,1],[0,0,0,0],[0,0,0,0],[0,0,0,0],[1,2,3,0],
-  [0,2,1,3],[0,0,0,0],[0,3,1,2],[0,3,2,1],[0,0,0,0],[0,0,0,0],[0,0,0,0],[1,3,2,0],
-  [0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],
-  [1,2,0,3],[0,0,0,0],[1,3,0,2],[0,0,0,0],[0,0,0,0],[0,0,0,0],[2,3,0,1],[2,3,1,0],
-  [1,0,2,3],[1,0,3,2],[0,0,0,0],[0,0,0,0],[0,0,0,0],[2,0,3,1],[0,0,0,0],[2,1,3,0],
-  [0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],
-  [2,0,1,3],[0,0,0,0],[0,0,0,0],[0,0,0,0],[3,0,1,2],[3,0,2,1],[0,0,0,0],[3,1,2,0],
-  [2,1,0,3],[0,0,0,0],[0,0,0,0],[0,0,0,0],[3,1,0,2],[0,0,0,0],[3,2,0,1],[3,2,1,0]];
-
-SimplexNoise.config = function(r) {
-
-  var i, p = SimplexNoise.p, perm = SimplexNoise.perm;
-
-  if (typeof r === 'undefined') {
-    r = Math;
-  }
-
-  for (i = 0; i < 256; i += 1) {
-    SimplexNoise.p[i] = Math.floor(r.random() * 256);
-  }
-  // To remove the need for index wrapping, double the permutation table length
-  for(i = 0; i < 512; i += 1) {
-    perm[i] = p[i & 255];
-  }
-};
-
-SimplexNoise.noise = function(xin, yin) {
-
-  var grad3 = SimplexNoise.grad3;
-  var p = SimplexNoise.p;
-  var perm = SimplexNoise.perm;
-  var simplex = SimplexNoise.simplex;
-
-  if (!p.length) {
-    SimplexNoise.config();
-  }
-
-  var n0, n1, n2; // Noise contributions from the three corners
-
-  // Skew the input space to determine which simplex cell we're in
-  var F2 = 0.5 * (Math.sqrt(3.0) - 1.0);
-  var s = (xin + yin) * F2; // Hairy factor for 2D
-  var i = Math.floor(xin + s);
-  var j = Math.floor(yin + s);
-  var G2 = (3.0 -Math.sqrt(3.0)) / 6.0;
-  var t = (i + j) * G2;
-  var X0 = i - t; // Unskew the cell origin back to (x,y) space
-  var Y0 = j - t;
-  var x0 = xin - X0; // The x,y distances from the cell origin
-  var y0 = yin - Y0;
-
-  // For the 2D case, the simplex shape is an equilateral triangle.
-  // Determine which simplex we are in.
-  var i1, j1; // Offsets for second (middle) corner of simplex in (i,j) coords
-  if (x0 > y0) { i1 = 1; j1 = 0; } // lower triangle, XY order: (0,0)->(1,0)->(1,1)
-  else { i1 = 0; j1 = 1; }      // upper triangle, YX order: (0,0)->(0,1)->(1,1)
-  // A step of (1,0) in (i,j) means a step of (1-c,-c) in (x,y), and
-  // a step of (0,1) in (i,j) means a step of (-c,1-c) in (x,y), where
-  // c = (3-sqrt(3))/6
-  var x1 = x0 - i1 + G2; // Offsets for middle corner in (x,y) unskewed coords
-  var y1 = y0 - j1 + G2;
-  var x2 = x0 - 1.0 + 2.0 * G2; // Offsets for last corner in (x,y) unskewed coords
-  var y2 = y0 - 1.0 + 2.0 * G2;
-
-  // Work out the hashed gradient indices of the three simplex corners
-  var ii = i & 255;
-  var jj = j & 255;
-  var gi0 = this.perm[ii + this.perm[jj]] % 12;
-  var gi1 = this.perm[ii + i1 + this.perm[jj + j1]] % 12;
-  var gi2 = this.perm[ii + 1 + this.perm[jj + 1]] % 12;
-
-  // Calculate the contribution from the three corners
-  var t0 = 0.5 - x0 * x0 - y0 * y0;
-  if (t0 < 0) {
-    n0 = 0.0;
-  } else {
-    t0 *= t0;
-    n0 = t0 * t0 * this.dot(this.grad3[gi0], x0, y0);  // (x,y) of grad3 used for 2D gradient
-  }
-  var t1 = 0.5 - x1 * x1 - y1 * y1;
-  if (t1 < 0) {
-    n1 = 0.0;
-  } else {
-    t1 *= t1;
-    n1 = t1 * t1 * this.dot(this.grad3[gi1], x1, y1);
-  }
-  var t2 = 0.5 - x2 * x2 - y2 * y2;
-  if (t2 < 0) {
-    n2 = 0.0;
-  } else {
-    t2 *= t2;
-    n2 = t2 * t2 * this.dot(this.grad3[gi2], x2, y2);
-  }
-  // Add contributions from each corner to get the final noise value.
-  // The result is scaled to return values in the interval [-1,1].
-  return 70.0 * (n0 + n1 + n2);
-
-};
-
-SimplexNoise.dot = function(g, x, y) {
-  return g[0] * x + g[1] * y;
-};
-
-module.exports = SimplexNoise;
-
-},{}],9:[function(_dereq_,module,exports){
-var Item = _dereq_('./item');
-var System = _dereq_('./system');
-var Utils = _dereq_('burner').Utils;
-var Vector = _dereq_('burner').Vector;
+},{}],6:[function(require,module,exports){
+var Item = require('./item');
+var System = require('./system');
+var Utils = require('burner').Utils;
+var Vector = require('burner').Vector;
 
 /**
  * Creates a new Anim. Use for frame-based animation in a
@@ -1872,10 +667,10 @@ Anim.prototype.advanceFrame = function() {
 module.exports = Anim;
 
 
-},{"./item":11,"./system":13,"burner":4}],10:[function(_dereq_,module,exports){
-var Item = _dereq_('./item');
-var System = _dereq_('./system');
-var Utils = _dereq_('burner').Utils;
+},{"./item":8,"./system":10,"burner":16}],7:[function(require,module,exports){
+var Item = require('./item');
+var System = require('./system');
+var Utils = require('burner').Utils;
 
 /**
  * Creates a new AnimUnit.
@@ -1921,9 +716,9 @@ AnimUnit.prototype.step = function() {
 };
 
 module.exports = AnimUnit;
-},{"./item":11,"./system":13,"burner":4}],11:[function(_dereq_,module,exports){
+},{"./item":8,"./system":10,"burner":16}],8:[function(require,module,exports){
 /*global document */
-var Vector = _dereq_('burner').Vector;
+var Vector = require('burner').Vector;
 
 /**
  * Creates a new Item.
@@ -2157,31 +952,31 @@ Item.prototype._wrapWorldEdges = function() {
 
 module.exports = Item;
 
-},{"burner":4}],12:[function(_dereq_,module,exports){
+},{"burner":16}],9:[function(require,module,exports){
 var BitShadowMachine = {
-  Anim: _dereq_('./anim'),
-  Item: _dereq_('./item'),
-  SimplexNoise: _dereq_('quietriot'),
-  System: _dereq_('./system'),
-  Vector: _dereq_('burner').Vector,
-  Utils: _dereq_('burner').Utils
+  Anim: require('./anim'),
+  Item: require('./item'),
+  SimplexNoise: require('quietriot'),
+  System: require('./system'),
+  Vector: require('burner').Vector,
+  Utils: require('burner').Utils
 };
 
 BitShadowMachine.System.Classes = {
-  Anim: _dereq_('./anim'),
-  AnimUnit: _dereq_('./animunit')
+  Anim: require('./anim'),
+  AnimUnit: require('./animunit')
 };
 
 module.exports = BitShadowMachine;
-},{"./anim":9,"./animunit":10,"./item":11,"./system":13,"burner":4,"quietriot":8}],13:[function(_dereq_,module,exports){
+},{"./anim":6,"./animunit":7,"./item":8,"./system":10,"burner":16,"quietriot":21}],10:[function(require,module,exports){
 /*global window, document */
 /*jshint supernew:true */
 
-var Item = _dereq_('./item');
-var FPSDisplay = _dereq_('fpsdisplay');
-var Utils = _dereq_('burner').Utils;
-var Vector = _dereq_('burner').Vector;
-var World = _dereq_('./world');
+var Item = require('./item');
+var FPSDisplay = require('fpsdisplay');
+var Utils = require('burner').Utils;
+var Vector = require('burner').Vector;
+var World = require('./world');
 
 window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
                               window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
@@ -2895,10 +1690,10 @@ System._resetSystem = function() {
 
 module.exports = System;
 
-},{"./item":11,"./world":14,"burner":4,"fpsdisplay":7}],14:[function(_dereq_,module,exports){
-var Item = _dereq_('./item');
-var Utils = _dereq_('burner').Utils;
-var Vector = _dereq_('burner').Vector;
+},{"./item":8,"./world":11,"burner":16,"fpsdisplay":5}],11:[function(require,module,exports){
+var Item = require('./item');
+var Utils = require('burner').Utils;
+var Vector = require('burner').Vector;
 
 /**
  * Creates a new World.
@@ -2983,382 +1778,1436 @@ World.prototype.step = function() {};
 
 module.exports = World;
 
-},{"./item":11,"burner":4}],15:[function(_dereq_,module,exports){
-var BitShadowItems = {
-  Mover: _dereq_('./mover'),
-  Oscillator: _dereq_('./oscillator'),
-  Particle: _dereq_('./particle')
+},{"./item":8,"burner":16}],12:[function(require,module,exports){
+/*jshint supernew:true */
+/** @namespace */
+var Utils = {
+  name: 'Utils'
 };
 
-// TODO: add...
-//Agent: require('./agent'),
-//Attractor: require('./attractor'),
-//Connector: require('./connector'),
-//Dragger: require('./dragger'),
-//FlowField: require('./flowfield'),
-//ParticleSystem: require('./particlesystem'),
-//Point: require('./point'),
-//RangeDisplay: require('./rangedisplay'),
-//Repeller: require('./repeller'),
-//Sensor: require('./sensor'),
-//Stimulus: require('./stimulus'),
-//Walker: require('./walker')
-
-module.exports = BitShadowItems;
-
-},{"./mover":16,"./oscillator":17,"./particle":18}],16:[function(_dereq_,module,exports){
-var Item = _dereq_('bitshadowmachine').Item,
-    System = _dereq_('bitshadowmachine').System,
-    Utils = _dereq_('bitshadowmachine').Utils,
-    Vector = _dereq_('bitshadowmachine').Vector;
+/**
+ * Extends the properties and methods of a superClass onto a subClass.
+ *
+ * @function extend
+ * @memberof Utils
+ * @param {Object} subClass The subClass.
+ * @param {Object} superClass The superClass.
+ */
+Utils.extend = function(subClass, superClass) {
+  function F() {}
+  F.prototype = superClass.prototype;
+  subClass.prototype = new F;
+  subClass.prototype.constructor = subClass;
+  subClass._superClass = superClass.prototype;
+};
 
 /**
- * Creates a new Mover.
+ * Generates a psuedo-random number within an inclusive range.
  *
- * Movers are the root object for any item that moves. They are not
- * aware of other Movers or stimuli. They have no means of locomotion
- * and change only due to external forces. You will never directly
- * implement Mover.
+ * @function getRandomNumber
+ * @memberof Utils
+ * @param {number} low The low end of the range.
+ * @param {number} high The high end of the range.
+ * @param {boolean} [flt] Set to true to return a float or when passing floats as a range.
+ * @returns {number} A number.
+ */
+Utils.getRandomNumber = function(low, high, flt) {
+  if (flt) {
+    return (Math.random() * (high - low)) + low;
+  }
+  high++;
+  return Math.floor((Math.random() * (high - low))) + low;
+};
+
+/**
+ * Determines the size of the browser window.
  *
+ * @function extend
+ * @memberof System
+ * @returns {Object} The current browser window width and height.
+ */
+Utils.getWindowSize = function() {
+
+  var d = {
+    'width' : false,
+    'height' : false
+  };
+
+  if (typeof(window.innerWidth) !== 'undefined') {
+    d.width = window.innerWidth;
+    d.height = window.innerHeight;
+  } else if (typeof(document.documentElement) !== 'undefined' &&
+      typeof(document.documentElement.clientWidth) !== 'undefined') {
+    d.width = document.documentElement.clientWidth;
+    d.height = document.documentElement.clientHeight;
+  } else if (typeof(document.body) !== 'undefined') {
+    d.width = document.body.clientWidth;
+    d.height = document.body.clientHeight;
+  }
+  return d;
+};
+
+/**
+ * Re-maps a number from one range to another.
+ *
+ * @function map
+ * @memberof Utils
+ * @param {number} value The value to be converted.
+ * @param {number} min1 Lower bound of the value's current range.
+ * @param {number} max1 Upper bound of the value's current range.
+ * @param {number} min2 Lower bound of the value's target range.
+ * @param {number} max2 Upper bound of the value's target range.
+ * @returns {number} A number.
+ */
+Utils.map = function(value, min1, max1, min2, max2) { // returns a new value relative to a new range
+  var unitratio = (value - min1) / (max1 - min1);
+  return (unitratio * (max2 - min2)) + min2;
+};
+
+/**
+ * Adds an event listener to a DOM element.
+ *
+ * @function _addEvent
+ * @memberof System
+ * @private
+ * @param {Object} target The element to receive the event listener.
+ * @param {string} eventType The event type.
+ * @param {function} The function to run when the event is triggered.
+ */
+Utils.addEvent = function(target, eventType, handler) {
+  if (target.addEventListener) { // W3C
+    target.addEventListener(eventType, handler, false);
+  } else if (target.attachEvent) { // IE
+    target.attachEvent('on' + eventType, handler);
+  }
+};
+
+/**
+ * Converts degrees to radians.
+ *
+ * @function degreesToRadians
+ * @memberof Utils
+ * @param {number} degrees The degrees value to be converted.
+ * @returns {number} A number in radians.
+ */
+Utils.degreesToRadians = function(degrees) {
+  if (typeof degrees !== 'undefined') {
+    return 2 * Math.PI * (degrees/360);
+  } else {
+    if (typeof console !== 'undefined') {
+      throw new Error('Error: Utils.degreesToRadians is missing degrees param.');
+    }
+  }
+};
+
+/**
+ * Converts radians to degrees.
+ *
+ * @function radiansToDegrees
+ * @memberof Utils
+ * @param {number} radians The radians value to be converted.
+ * @returns {number} A number in degrees.
+ */
+Utils.radiansToDegrees = function(radians) {
+  if (typeof radians !== 'undefined') {
+    return radians * (180/Math.PI);
+  } else {
+    if (typeof console !== 'undefined') {
+      throw new Error('Error: Utils.radiansToDegrees is missing radians param.');
+    }
+  }
+};
+
+/**
+ * Constrain a value within a range.
+ *
+ * @function constrain
+ * @memberof Utils
+ * @param {number} val The value to constrain.
+ * @param {number} low The lower bound of the range.
+ * @param {number} high The upper bound of the range.
+ * @returns {number} A number.
+ */
+Utils.constrain = function(val, low, high) {
+  if (val > high) {
+    return high;
+  } else if (val < low) {
+    return low;
+  }
+  return val;
+};
+
+/**
+ * Determines if one object is inside another.
+ *
+ * @function isInside
+ * @memberof Utils
+ * @param {Object} obj The object.
+ * @param {Object} container The containing object.
+ * @returns {boolean} Returns true if the object is inside the container.
+ */
+Utils.isInside = function(obj, container) {
+  if (!obj || !container) {
+    throw new Error('isInside() requires both an object and a container.');
+  }
+
+  obj.width = obj.width || 0;
+  obj.height = obj.height || 0;
+  container.width = container.width || 0;
+  container.height = container.height || 0;
+
+  if (obj.location.x + obj.width / 2 > container.location.x - container.width / 2 &&
+    obj.location.x - obj.width / 2 < container.location.x + container.width / 2 &&
+    obj.location.y + obj.height / 2 > container.location.y - container.height / 2 &&
+    obj.location.y - obj.height / 2 < container.location.y + container.height / 2) {
+    return true;
+  }
+  return false;
+};
+
+/**
+ * Capitalizes the first character in a string.
+ *
+ * @function capitalizeFirstLetter
+ * @memberof Utils
+ * @param {string} string The string to capitalize.
+ * @returns {string} The string with the first character capitalized.
+ */
+Utils.capitalizeFirstLetter = function(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+};
+
+module.exports = Utils;
+},{}],13:[function(require,module,exports){
+module.exports=require(5)
+},{"/Users/vince/Dev/Foldi/tinytornado/node_modules/bitshadowmachine/node_modules/fpsdisplay/src/fpsdisplay.js":5}],14:[function(require,module,exports){
+/*global exports, Vector */
+/*jshint supernew:true */
+
+
+/**
+ * Creates a new Vector.
+ *
+ * @param {number} [opt_x = 0] The x location.
+ * @param {number} [opt_y = 0] The y location.
  * @constructor
- * @extends Item
  */
-function Mover() {
-  Item.call(this);
+function Vector(opt_x, opt_y) {
+  var x = opt_x || 0,
+      y = opt_y || 0;
+  this.x = x;
+  this.y = y;
 }
-Utils.extend(Mover, Item);
 
 /**
- * Initializes an instance of Mover.
- * @param  {Object} world An instance of World.
- * @param  {Object} opt_options A map of initial properties.
- * @param {string|Array} [opt_options.color = 255, 255, 255] Color.
- * @param {number} [opt_options.borderRadius = 100] Border radius.
- * @param {number} [opt_options.borderWidth = 2] Border width.
- * @param {string} [opt_options.borderStyle = 'solid'] Border style.
- * @param {Array} [opt_options.borderColor = 60, 60, 60] Border color.
- * @param {boolean} [opt_options.pointToDirection = true] If true, object will point in the direction it's moving.
- * @param {Object} [opt_options.parent = null] A parent object. If set, object will be fixed to the parent relative to an offset distance.
- * @param {boolean} [opt_options.pointToParentDirection = true] If true, object points in the direction of the parent's velocity.
- * @param {number} [opt_options.offsetDistance = 30] The distance from the center of the object's parent.
- * @param {number} [opt_options.offsetAngle = 0] The rotation around the center of the object's parent.
- * @param {function} [opt_options.afterStep = null] A function to run after the step() function.
- * @param {function} [opt_options.isStatic = false] Set to true to prevent object from moving.
- * @param {Object} [opt_options.parent = null] Attach to another Flora object.
+ * Subtract two vectors.
+ *
+ * @param {number} v1 The first vector.
+ * @param {number} v2 The second vector.
+ * @returns {Object} A new Vector.
  */
-Mover.prototype.init = function(world, opt_options) {
-  Mover._superClass.init.call(this, world, opt_options);
+Vector.VectorSub = function(v1, v2) {
+  return new Vector(v1.x - v2.x, v1.y - v2.y);
+};
+
+/**
+ * Add two vectors.
+ *
+ * @param {number} v1 The first vector.
+ * @param {number} v2 The second vector.
+ * @returns {Object} A new Vector.
+ */
+Vector.VectorAdd = function(v1, v2) {
+  return new Vector(v1.x + v2.x, v1.y + v2.y);
+};
+
+/**
+ * Multiply a vector by a scalar value.
+ *
+ * @param {number} v A vector.
+ * @param {number} n Vector will be multiplied by this number.
+ * @returns {Object} A new Vector.
+ */
+Vector.VectorMult = function(v, n) {
+  return new Vector(v.x * n, v.y * n);
+};
+
+/**
+ * Divide two vectors.
+ *
+ * @param {number} v A vector.
+ * @param {number} n Vector will be divided by this number.
+ * @returns {Object} A new Vector.
+ */
+Vector.VectorDiv = function(v, n) {
+  return new Vector(v.x / n, v.y / n);
+};
+
+/**
+ * Calculates the distance between two vectors.
+ *
+ * @param {number} v1 The first vector.
+ * @param {number} v2 The second vector.
+ * @returns {number} The distance between the two vectors.
+ */
+Vector.VectorDistance = function(v1, v2) {
+  return Math.sqrt(Math.pow(v2.x - v1.x, 2) + Math.pow(v2.y - v1.y, 2));
+};
+
+/**
+ * Get the midpoint between two vectors.
+ *
+ * @param {number} v1 The first vector.
+ * @param {number} v2 The second vector.
+ * @returns {Object} A new Vector.
+ */
+Vector.VectorMidPoint = function(v1, v2) {
+  return Vector.VectorAdd(v1, v2).div(2); // midpoint = (v1 + v2)/2
+};
+
+/**
+ * Get the angle between two vectors.
+ *
+ * @param {number} v1 The first vector.
+ * @param {number} v2 The second vector.
+ * @returns {number} An angle.
+ */
+Vector.VectorAngleBetween = function(v1, v2) {
+  var dot = v1.dot(v2),
+  theta = Math.acos(dot / (v1.mag() * v2.mag()));
+  return theta;
+};
+
+Vector.prototype.name = 'Vector';
+
+/**
+* Returns an new vector with all properties and methods of the
+* old vector copied to the new vector's prototype.
+*
+* @returns {Object} A vector.
+*/
+Vector.prototype.clone = function() {
+  function F() {}
+  F.prototype = this;
+  return new F;
+};
+
+/**
+ * Adds a vector to this vector.
+ *
+ * @param {Object} vector The vector to add.
+ * @returns {Object} This vector.
+ */
+Vector.prototype.add = function(vector) {
+  this.x += vector.x;
+  this.y += vector.y;
+  return this;
+};
+
+/**
+ * Subtracts a vector from this vector.
+ *
+ * @param {Object} vector The vector to subtract.
+ * @returns {Object} This vector.
+ */
+Vector.prototype.sub = function(vector) {
+  this.x -= vector.x;
+  this.y -= vector.y;
+  return this;
+};
+
+/**
+ * Multiplies this vector by a passed value.
+ *
+ * @param {number} n Vector will be multiplied by this number.
+ * @returns {Object} This vector.
+ */
+Vector.prototype.mult = function(n) {
+  this.x *= n;
+  this.y *= n;
+  return this;
+};
+
+/**
+ * Divides this vector by a passed value.
+ *
+ * @param {number} n Vector will be divided by this number.
+ * @returns {Object} This vector.
+ */
+Vector.prototype.div = function(n) {
+  this.x = this.x / n;
+  this.y = this.y / n;
+  return this;
+};
+
+/**
+ * Calculates the magnitude of this vector.
+ *
+ * @returns {number} The vector's magnitude.
+ */
+Vector.prototype.mag = function() {
+  return Math.sqrt((this.x * this.x) + (this.y * this.y));
+};
+
+/**
+ * Limits the vector's magnitude.
+ *
+ * @param {number} opt_high The upper bound of the vector's magnitude
+ * @param {number} opt_low The lower bound of the vector's magnitude.
+ * @returns {Object} This vector.
+ */
+Vector.prototype.limit = function(opt_high, opt_low) {
+  var high = opt_high || null,
+      low = opt_low || null;
+  if (high && this.mag() > high) {
+    this.normalize();
+    this.mult(high);
+  }
+  if (low && this.mag() < low) {
+    this.normalize();
+    this.mult(low);
+  }
+  return this;
+};
+
+/**
+ * Divides a vector by its magnitude to reduce its magnitude to 1.
+ * Typically used to retrieve the direction of the vector for later manipulation.
+ *
+ * @returns {Object} This vector.
+ */
+Vector.prototype.normalize = function() {
+  var m = this.mag();
+  if (m !== 0) {
+    return this.div(m);
+  }
+};
+
+/**
+ * Calculates the distance between this vector and a passed vector.
+ *
+ * @param {Object} vector The target vector.
+ * @returns {Object} The distance between the two vectors.
+ */
+Vector.prototype.distance = function(vector) {
+  return Math.sqrt(Math.pow(vector.x - this.x, 2) + Math.pow(vector.y - this.y, 2));
+};
+
+/**
+ * Rotates a vector using a passed angle in radians.
+ *
+ * @param {number} radians The angle to rotate in radians.
+ * @returns {Object} This vector.
+ */
+Vector.prototype.rotate = function(radians) {
+  var cos = Math.cos(radians),
+    sin = Math.sin(radians),
+    x = this.x,
+    y = this.y;
+
+  this.x = x * cos - y * sin;
+  this.y = x * sin + y * cos;
+  return this;
+};
+
+/**
+ * Calculates the midpoint between this vector and a passed vector.
+ *
+ * @param {Object} v1 The first vector.
+ * @param {Object} v1 The second vector.
+ * @returns {Object} A vector representing the midpoint between the passed vectors.
+ */
+Vector.prototype.midpoint = function(vector) {
+  return Vector.VectorAdd(this, vector).div(2);
+};
+
+/**
+ * Calulates the dot product.
+ *
+ * @param {Object} vector The target vector.
+ * @returns {Object} A vector.
+ */
+Vector.prototype.dot = function(vector) {
+  if (this.z && vector.z) {
+    return this.x * vector.x + this.y * vector.y + this.z * vector.z;
+  }
+  return this.x * vector.x + this.y * vector.y;
+};
+
+module.exports = Vector;
+},{}],15:[function(require,module,exports){
+/*global document */
+
+var Vector = require('vector2d-lib');
+
+/**
+ * Creates a new Item.
+ * @constructor
+ * @param {string} opt_name The item's class name.
+ */
+function Item() {
+  Item._idCount++;
+}
+
+/**
+ * Holds a count of item instances.
+ * @memberof Item
+ * @private
+ */
+Item._idCount = 0;
+
+/**
+ * Holds a transform property based on supportedFeatures.
+ * @memberof Item
+ * @private
+ */
+Item._stylePosition =
+    'transform: translate3d(<x>px, <y>px, 0) rotate(<angle>deg) scale(<scale>, <scale>); ' +
+    '-webkit-transform: translate3d(<x>px, <y>px, 0) rotate(<angle>deg) scale(<scale>, <scale>); ' +
+    '-moz-transform: translate3d(<x>px, <y>px, 0) rotate(<angle>deg) scale(<scale>, <scale>); ' +
+    '-o-transform: translate3d(<x>px, <y>px, 0) rotate(<angle>deg) scale(<scale>, <scale>); ' +
+    '-ms-transform: translate3d(<x>px, <y>px, 0) rotate(<angle>deg) scale(<scale>, <scale>);';
+
+/**
+ * Resets all properties.
+ * @function init
+ * @memberof Item
+ *
+ * @param {Object} [opt_options=] A map of initial properties.
+ * @param {number} [opt_options.name = 'Item'] The item's name.
+ * @param {number} [opt_options.width = 10] Width.
+ * @param {number} [opt_options.height = 10] Height.
+ * @param {number} [opt_options.scale = 1] Scale.
+ * @param {number} [opt_options.angle = 0] Angle.
+ * @param {Array} [opt_options.colorMode = 'rgb'] Color mode. Possible values are 'rgb' and 'hsl'.
+ * @param {Array} [opt_options.color = 200, 200, 200] Color.
+ * @param {Array} [opt_options.borderWidth = 0] borderWidth.
+ * @param {Array} [opt_options.borderStyle = 'none'] borderStyle.
+ * @param {Array} [opt_options.borderColor = 255, 255, 255] borderColor.
+ * @param {Array} [opt_options.borderRadius = 0] borderRadius.
+ * @param {Array} [opt_options.boxShadowOffsetX = 0] boxShadowOffsetX.
+ * @param {Array} [opt_options.boxShadowOffsetY = 0] boxShadowOffsetY.
+ * @param {Array} [opt_options.boxShadowBlur = 0] boxShadowBlur.
+ * @param {Array} [opt_options.boxShadowSpread = 0] boxShadowSpread.
+ * @param {Array} [opt_options.boxShadowColor = 255, 255, 255] boxShadowColor.
+ * @param {Array} [opt_options.opacity = 1] opacity.
+ * @param {Array} [opt_options.zIndex = 0] zIndex.
+ * @param {number} [opt_options.mass = 10] mass.
+ * @param {Function|Object} [opt_options.acceleration = new Vector()] acceleration.
+ * @param {Function|Object} [opt_options.velocity = new Vector()] velocity.
+ * @param {Function|Object} [opt_options.location = new Vector()] location.
+ * @param {number} [opt_options.maxSpeed = 10] maxSpeed.
+ * @param {number} [opt_options.minSpeed = 0] minSpeed.
+ * @param {bounciness} [opt_options.bounciness = 0] bounciness.
+ * @param {number} [opt_options.life = 0] life.
+ * @param {number} [opt_options.lifespan = -1] lifespan.
+ * @param {boolean} [opt_options.checkWorldEdges = true] Set to true to check for world boundary collisions.
+ * @param {boolean} [opt_options.wrapWorldEdges = false] Set to true to check for world boundary collisions and position item at the opposing boundary.
+ * @param {Function} [opt_options.beforeStep = function() {}] This function will be called at the beginning of the item's step() function.
+ * @param {Function} [opt_options.afterStep = function() {}] This function will be called at the end of the item's step() function.
+ * @param {string} [opt_options.controlCamera = false] Set to true to set world's position relaive to this item.
+ */
+Item.prototype.init = function(world, opt_options) {
+
+  if (!world || typeof world !== 'object') {
+    throw new Error('Item requires an instance of World.');
+  }
+
+  this.world = world;
 
   var options = opt_options || {};
 
-  this.color = options.color || [255, 255, 255];
-  this.borderRadius = options.borderRadius || 0;
-  this.borderWidth = options.borderWidth || 0;
-  this.borderStyle = options.borderStyle || 'none';
-  this.borderColor = options.borderColor || [0, 0, 0];
-  this.pointToDirection = typeof options.pointToDirection === 'undefined' ? true : options.pointToDirection;
-  this.parent = options.parent || null;
-  this.pointToParentDirection = typeof options.pointToParentDirection === 'undefined' ? true : options.pointToParentDirection;
-  this.offsetDistance = typeof options.offsetDistance === 'undefined' ? 0 : options.offsetDistance;
-  this.offsetAngle = options.offsetAngle || 0;
-  this.isStatic = !!options.isStatic;
+  this.name = typeof this.name !== 'undefined' ? this.name :
+      options.name || 'Item';
 
-  this._friction = new Vector();
+  this.width = typeof this.width !== 'undefined' ? this.width :
+      typeof options.width === 'undefined' ? 10 : options.width;
+
+  this.height = typeof this.height !== 'undefined' ? this.height :
+      typeof options.height === 'undefined' ? 10 : options.height;
+
+  this.scale = typeof this.scale !== 'undefined' ? this.scale :
+      typeof options.scale === 'undefined' ? 1 : options.scale;
+
+  this.angle = typeof this.angle !== 'undefined' ? this.angle :
+      options.angle || 0;
+
+  this.colorMode = typeof this.colorMode !== 'undefined' ? this.colorMode :
+      options.colorMode || 'rgb';
+
+  this.color = typeof this.color !== 'undefined' ? this.color :
+      options.color || [200, 200, 200];
+
+  this.borderWidth = typeof this.borderWidth !== 'undefined' ? this.borderWidth :
+      options.borderWidth || 0;
+
+  this.borderStyle = typeof this.borderStyle !== 'undefined' ? this.borderStyle :
+      options.borderStyle || 'none';
+
+  this.borderColor = typeof this.borderColor !== 'undefined' ? this.borderColor :
+      options.borderColor || [255, 255, 255];
+
+  this.borderRadius = typeof this.borderRadius !== 'undefined' ? this.borderRadius :
+      options.borderRadius || 0;
+
+  this.boxShadowOffsetX = typeof this.boxShadowOffsetX !== 'undefined' ? this.boxShadowOffsetX :
+      options.boxShadowOffsetX || 0;
+
+  this.boxShadowOffsetY = typeof this.boxShadowOffsetY !== 'undefined' ? this.boxShadowOffsetY :
+      options.boxShadowOffsetY || 0;
+
+  this.boxShadowBlur = typeof this.boxShadowBlur !== 'undefined' ? this.boxShadowBlur :
+      options.boxShadowBlur || 0;
+
+  this.boxShadowSpread = typeof this.boxShadowSpread !== 'undefined' ? this.boxShadowSpread :
+      options.boxShadowSpread || 0;
+
+  this.boxShadowColor = typeof this.boxShadowColor !== 'undefined' ? this.boxShadowColor :
+      options.boxShadowColor || [255, 255, 255];
+
+  this.opacity = typeof this.opacity !== 'undefined' ? this.opacity :
+      typeof options.opacity === 'undefined' ? 1 : options.opacity;
+
+  this.zIndex = typeof this.zIndex !== 'undefined' ? this.zIndex :
+      options.zIndex || 0;
+
+  this.visibility = typeof this.visibility !== 'undefined' ? this.visibility :
+      options.visibility || 'visible';
+
+  this.mass = typeof this.mass !== 'undefined' ? this.mass :
+      typeof options.mass === 'undefined' ? 10 : options.mass;
+
+  this.acceleration = typeof this.acceleration !== 'undefined' ? this.acceleration :
+      options.acceleration || new Vector();
+
+  this.velocity = typeof this.velocity !== 'undefined' ? this.velocity :
+      options.velocity || new Vector();
+
+  this.location = typeof this.location !== 'undefined' ? this.location :
+      options.location || new Vector(this.world.width / 2, this.world.height / 2);
+
+  this.maxSpeed = typeof this.maxSpeed !== 'undefined' ? this.maxSpeed :
+      typeof options.maxSpeed === 'undefined' ? 10 : options.maxSpeed;
+
+  this.minSpeed = typeof this.minSpeed !== 'undefined' ? this.minSpeed :
+      options.minSpeed || 0;
+
+  this.bounciness = typeof this.bounciness !== 'undefined' ? this.bounciness :
+      typeof options.bounciness === 'undefined' ? 0.5 : options.bounciness;
+
+  this.life = typeof this.life !== 'undefined' ? this.life :
+      options.life || 0;
+
+  this.lifespan = typeof this.lifespan !== 'undefined' ? this.lifespan :
+      typeof options.lifespan === 'undefined' ? -1 : options.lifespan;
+
+  this.checkWorldEdges = typeof this.checkWorldEdges !== 'undefined' ? this.checkWorldEdges :
+      typeof options.checkWorldEdges === 'undefined' ? true : options.checkWorldEdges;
+
+  this.wrapWorldEdges = typeof this.wrapWorldEdges !== 'undefined' ? this.wrapWorldEdges :
+      !!options.wrapWorldEdges;
+
+  this.beforeStep = typeof this.beforeStep !== 'undefined' ? this.beforeStep :
+      options.beforeStep || function() {};
+
+  this.afterStep = typeof this.afterStep !== 'undefined' ? this.afterStep :
+      options.afterStep || function() {};
+
+  this.controlCamera = typeof this.controlCamera !== 'undefined' ? this.controlCamera :
+      !!options.controlCamera;
+
+  this._force = this._force || new Vector();
+
+  this.id = this.name + Item._idCount;
+  if (!this.el) {
+    this.el = document.createElement('div');
+    this.el.id = this.id;
+    this.el.className = 'item ' + this.name.toLowerCase();
+    this.el.style.position = 'absolute';
+    this.el.style.top = '-5000px';
+    this.world.add(this.el);
+  }
 };
 
-Mover.prototype.step = function() {
+/**
+ * Applies forces to item.
+ * @function step
+ * @memberof Item
+ */
+Item.prototype.step = function() {
 
-  var i, max, x = this.location.x,
+  var x = this.location.x,
       y = this.location.y;
 
   this.beforeStep.call(this);
-
-  if (this.isStatic) {
-    return;
-  }
-
-  // start apply forces
-
-  if (this.world.c) { // friction
-    this._friction.x = this.velocity.x;
-    this._friction.y = this.velocity.y;
-    this._friction.mult(-1);
-    this._friction.normalize();
-    this._friction.mult(this.world.c);
-    this.applyForce(this._friction);
-  }
-  this.applyForce(this.world.gravity); // gravity
-
-  // attractors
-  var attractors = System.getAllItemsByName('Attractor');
-  for (i = 0, max = attractors.length; i < max; i += 1) {
-    if (this.id !== attractors[i].id) {
-      this.applyForce(attractors[i].attract(this));
-    }
-  }
-
-  // repellers
-  var repellers = System.getAllItemsByName('Repeller');
-  for (i = 0, max = repellers.length; i < max; i += 1) {
-    if (this.id !== repellers[i].id) {
-      this.applyForce(repellers[i].attract(this));
-    }
-  }
-
-  // draggers
-  var draggers = System.getAllItemsByName('Dragger');
-  for (i = 0, max = draggers.length; i < max; i += 1) {
-    if (this.id !== draggers[i].id && Utils.isInside(this, draggers[i])) {
-      this.applyForce(draggers[i].drag(this));
-    }
-  }
-
-  if (this.applyAdditionalForces) {
-    this.applyAdditionalForces.call(this);
-  }
-
-  this.velocity.add(this.acceleration); // add acceleration
-
+  this.applyForce(this.world.gravity);
+  this.applyForce(this.world.wind);
+  this.velocity.add(this.acceleration);
   this.velocity.limit(this.maxSpeed, this.minSpeed);
-
-  this.location.add(this.velocity); // add velocity
-
-  if (this.pointToDirection) { // object rotates toward direction
-    if (this.velocity.mag() > 0.1) {
-      this.angle = Utils.radiansToDegrees(Math.atan2(this.velocity.y, this.velocity.x));
-    }
-  }
-
-  if (this.wrapWorldEdges) {
-    this._wrapWorldEdges();
-  } else if (this.checkWorldEdges) {
+  this.location.add(this.velocity);
+  if (this.checkWorldEdges) {
     this._checkWorldEdges();
+  } else if (this.wrapWorldEdges) {
+    this._wrapWorldEdges();
   }
-
-  if (this.controlCamera) {
+  if (this.controlCamera) { // need the corrected velocity which is the difference bw old/new location
     this._checkCameraEdges(x, y, this.location.x, this.location.y);
   }
+  this.acceleration.mult(0);
+  this.afterStep.call(this);
+};
 
-  if (this.parent) { // parenting
+/**
+ * Adds a force to this object's acceleration.
+ * @function applyForce
+ * @memberof Item
+ * @param {Object} force A Vector representing a force to apply.
+ * @returns {Object} A Vector representing a new acceleration.
+ */
+Item.prototype.applyForce = function(force) {
+  // calculated via F = m * a
+  if (force) {
+    this._force.x = force.x;
+    this._force.y = force.y;
+    this._force.div(this.mass);
+    this.acceleration.add(this._force);
+    return this.acceleration;
+  }
+};
 
-    if (this.offsetDistance) {
+/**
+ * Prevents object from moving beyond world bounds.
+ * @function _checkWorldEdges
+ * @memberof Item
+ * @private
+ */
+Item.prototype._checkWorldEdges = function() {
 
-      r = this.offsetDistance; // use angle to calculate x, y
-      theta = Utils.degreesToRadians(this.parent.angle + this.offsetAngle);
-      x = r * Math.cos(theta);
-      y = r * Math.sin(theta);
+  var worldRight = this.world.width,
+      worldBottom = this.world.height,
+      location = this.location,
+      velocity = this.velocity,
+      width = this.width * this.scale,
+      height = this.height * this.scale,
+      bounciness = this.bounciness;
 
-      this.location.x = this.parent.location.x;
-      this.location.y = this.parent.location.y;
-      this.location.add(new Vector(x, y)); // position the child
+  if (location.x + width / 2 > worldRight) {
+    location.x = worldRight - width / 2;
+    velocity.x *= -1 * bounciness;
+  } else if (location.x < width / 2) {
+    location.x = width / 2;
+    velocity.x *= -1 * bounciness;
+  }
 
-      if (this.pointToParentDirection) {
-        this.angle = Utils.radiansToDegrees(Math.atan2(this.parent.velocity.y, this.parent.velocity.x));
-      }
+  if (location.y + height / 2 > worldBottom) {
+    location.y = worldBottom - height / 2;
+    velocity.y *= -1 * bounciness;
+  } else if (location.y < height / 2) {
+    location.y = height / 2;
+    velocity.y *= -1 * bounciness;
+  }
+};
 
-    } else {
-      this.location.x = this.parent.location.x;
-      this.location.y = this.parent.location.y;
+/**
+ * If item moves beyond world bounds, position's object at the opposite boundary.
+ * @function _wrapWorldEdges
+ * @memberof Item
+ * @private
+ */
+Item.prototype._wrapWorldEdges = function() {
+
+  var worldRight = this.world.width,
+      worldBottom = this.world.height,
+      location = this.location,
+      width = this.width * this.scale,
+      height = this.height * this.scale;
+
+  if (location.x - width / 2 > worldRight) {
+    location.x = -width / 2;
+  } else if (location.x < -width / 2) {
+    location.x = worldRight + width / 2;
+  }
+
+  if (location.y - height / 2 > worldBottom) {
+    location.y = -height / 2;
+  } else if (location.y < -height / 2) {
+    location.y = worldBottom + height / 2;
+  }
+};
+
+/**
+ * Moves the world in the opposite direction of the Camera's controlObj.
+ */
+Item.prototype._checkCameraEdges = function(lastX, lastY, x, y) {
+  this.world._camera.x = lastX - x;
+  this.world._camera.y = lastY - y;
+};
+
+/**
+ * Updates the corresponding DOM element's style property.
+ * @function draw
+ * @memberof Item
+ */
+Item.prototype.draw = function() {
+  var cssText = this.getCSSText({
+    x: this.location.x - (this.width / 2),
+    y: this.location.y - (this.height / 2),
+    angle: this.angle,
+    scale: this.scale || 1,
+    width: this.width,
+    height: this.height,
+    colorMode: this.colorMode,
+    color0: this.color[0],
+    color1: this.color[1],
+    color2: this.color[2],
+    opacity: this.opacity,
+    zIndex: this.zIndex,
+    visibility: this.visibility
+  });
+  this.el.style.cssText = cssText;
+};
+
+/**
+ * Concatenates a new cssText string.
+ *
+ * @function getCSSText
+ * @memberof Item
+ * @param {Object} props A map of object properties.
+ * @returns {string} A string representing cssText.
+ */
+Item.prototype.getCSSText = function(props) {
+  return Item._stylePosition.replace(/<x>/g, props.x).replace(/<y>/g, props.y).replace(/<angle>/g, props.angle).replace(/<scale>/g, props.scale) + 'width: ' + props.width + 'px; height: ' + props.height + 'px; background-color: ' + props.colorMode + '(' + props.color0 + ', ' + props.color1 + (props.colorMode === 'hsl' ? '%' : '') + ', ' + props.color2 + (props.colorMode === 'hsl' ? '%' : '') + '); opacity: ' + props.opacity + '; z-index: ' + props.zIndex + '; visibility: ' + props.visibility + ';';
+};
+
+module.exports = Item;
+
+},{"vector2d-lib":14}],16:[function(require,module,exports){
+module.exports = {
+  Item: require('./item'),
+  System: require('./system'),
+  Utils: require('drawing-utils-lib'),
+  Vector: require('vector2d-lib'),
+  World: require('./world')
+};
+
+},{"./item":15,"./system":17,"./world":18,"drawing-utils-lib":12,"vector2d-lib":14}],17:[function(require,module,exports){
+/*global window, document */
+/*jshint supernew:true */
+
+var Item = require('./item'),
+    World = require('./world'),
+    Vector = require('vector2d-lib'),
+    Utils = require('drawing-utils-lib'),
+    FPSDisplay = require('fpsdisplay');
+
+window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+                              window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+
+/** @namespace */
+var System = {
+  name: 'System'
+};
+
+/**
+ * Holds additional classes that can be defined at runtime.
+ * @memberof System
+ */
+System.Classes = {
+  'Item': Item
+};
+
+/**
+ * Holds a vector describing the system gravity.
+ * @memberof System
+ */
+System.gravity = new Vector(0, 1);
+
+/**
+ * Holds a vector describing the system wind.
+ * @memberof System
+ */
+System.wind = new Vector();
+
+/**
+ * Stores references to all items in the system.
+ * @memberof System
+ * @private
+ */
+System._records = [];
+
+/**
+ * Stores references to all items removed from the system.
+ * @memberof System
+ * @private
+ */
+System._pool = [];
+
+/**
+ * Holds the current and last mouse/touch positions relative
+ * to the browser window. Also, holds the current mouse velocity.
+ * @public
+ */
+System.mouse = {
+  location: new Vector(),
+  lastLocation: new Vector(),
+  velocity: new Vector()
+};
+
+/**
+ * Increments with each call to System.loop.
+ * @type {number}
+ * @private
+ */
+System.clock = 0;
+
+/**
+ * System.loop() calls this function. Use to execute
+ * a function in the animation loop outside of any items.
+ * @type {Function}
+ * @private
+ */
+System.frameFunction = null;
+
+ /**
+  * Call to execute any setup code before starting the animation loop.
+  * @function setup
+  * @param  {Object} opt_func   A function to run before the function exits.
+  * @memberof System
+  */
+System.setup = function(opt_func) {
+
+  var func = opt_func || function() {}, i, l, max;
+
+  document.body.onorientationchange = System.updateOrientation;
+
+  // save the current and last mouse position
+  Utils.addEvent(document, 'mousemove', System._recordMouseLoc);
+
+  // save the current and last touch position
+  Utils.addEvent(window, 'touchstart', System._recordMouseLoc);
+  Utils.addEvent(window, 'touchmove', System._recordMouseLoc);
+  Utils.addEvent(window, 'touchend', System._recordMouseLoc);
+
+  // listen for key up
+  Utils.addEvent(window, 'keyup', System._keyup);
+
+  // save the setup callback in case we need to reset the system.
+  System.setupFunc = func;
+
+  System.setupFunc.call(this);
+};
+
+ /**
+  * Call to execute any setup code before starting the animation loop.
+  * Note: Deprecated in v3. Use setup();
+  * @function setup
+  * @param  {Object} opt_func   A function to run before the function exits.
+  * @param  {Object|Array} opt_worlds A instance or array of instances of World.
+  * @memberof System
+  */
+System.init = function(opt_func, opt_worlds) {
+  System.setup(opt_func, opt_worlds);
+};
+
+/**
+ * Adds world to System records and worlds cache.
+ *
+ * @function _addWorld
+ * @memberof System
+ * @private
+ * @param {Object} world An instance of World.
+ */
+System._addWorld = function(world) {
+  System._records.push(world);
+};
+
+/**
+ * Adds instances of class to _records and calls init on them.
+ * @function add
+ * @memberof System
+ * @param {string} [opt_klass = 'Item'] The name of the class to add.
+ * @param {Object} [opt_options=] A map of initial properties.
+ * @param {Object} [opt_world = System._records[0]] An instance of World to contain the item.
+ * @returns {Object} An instance of the added item.
+ */
+System.add = function(opt_klass, opt_options, opt_world) {
+
+  var klass = opt_klass || 'Item',
+      options = opt_options || {},
+      world = opt_world || System.firstWorld(),
+      records = this._records, obj;
+
+  // recycle object if one is available; obj must be an instance of the same class
+  for (var i = 0, max = System._pool.length; i < max; i++) {
+    if (System._pool[i].name === klass) {
+      obj = System._cleanObj(System._pool.splice(i, 1)[0]);
+      break;
     }
   }
 
-  this.acceleration.mult(0);
-
-  if (this.life < this.lifespan) {
-    this.life += 1;
-  } else if (this.lifespan !== -1) {
-    System.remove(this);
-    return;
+  if (!obj) {
+    if (klass.toLowerCase() === 'world') {
+      obj = new World(options);
+    } else if (System.Classes[klass]) {
+      obj = new System.Classes[klass](options);
+    } else {
+      obj = new Item();
+    }
   }
 
-  this.afterStep.call(this);
+  options.name = klass;
+  obj.init(world, options);
+  records.push(obj);
+  return obj;
 };
-
-module.exports = Mover;
-
-},{"bitshadowmachine":12}],17:[function(_dereq_,module,exports){
-var Item = _dereq_('bitshadowmachine').Item,
-    SimplexNoise = _dereq_('quietriot'),
-    System = _dereq_('bitshadowmachine').System,
-    Utils = _dereq_('bitshadowmachine').Utils,
-    Vector = _dereq_('bitshadowmachine').Vector;
-
-function Oscillator(opt_options) {
-  Item.call(this);
-}
-Utils.extend(Oscillator, Item);
-
-Oscillator.prototype.init = function(world, opt_options) {
-  Oscillator._superClass.init.call(this, world, opt_options);
-
-  var options = opt_options || {};
-
-  this.acceleration = options.acceleration || new Vector(0.01, 0);
-  this.aVelocity = options.aVelocity || new Vector();
-  this.isStatic = !!options.isStatic;
-  this.perlin = !!options.perlin;
-  this.perlinSpeed = typeof options.perlinSpeed === 'undefined' ? 0.005 : options.perlinSpeed;
-  this.perlinTime = options.perlinTime || 0;
-  this.perlinAccelLow = typeof options.perlinAccelLow === 'undefined' ? -2 : options.perlinAccelLow;
-  this.perlinAccelHigh = typeof options.perlinAccelHigh === 'undefined' ? 2 : options.perlinAccelHigh;
-  this.perlinOffsetX = typeof options.perlinOffsetX === 'undefined' ? Math.random() * 10000 : options.perlinOffsetX;
-  this.perlinOffsetY = typeof options.perlinOffsetY === 'undefined' ? Math.random() * 10000 : options.perlinOffsetY;
-  this.color = options.color || [200, 100, 0];
-  this.opacity = typeof options.opacity === 'undefined' ? 0.75 : options.opacity;
-  this.zIndex = typeof options.zIndex === 'undefined' ? 1 : options.zIndex;
-  this.parent = options.parent || null;
-  this.pointToDirection = !!options.pointToDirection;
-
-  //
-
-  this.lastLocation = new Vector();
-  this.amplitude = options.amplitude || new Vector(this.world.width / 2,
-      this.world.height / 2);
-  this.initialLocation = options.initialLocation ||
-    new Vector(this.world.width / 2, this.world.height / 2);
-  this.location.x = this.initialLocation.x;
-  this.location.y = this.initialLocation.y;
-};
-
-Oscillator.prototype.step = function () {
-
-  this.beforeStep.call(this);
-
-  if (this.isStatic) {
-    return;
-  }
-
-  if (this.perlin) {
-    this.perlinTime += this.perlinSpeed;
-    this.aVelocity.x =  Utils.map(SimplexNoise.noise(this.perlinTime + this.perlinOffsetX, 0), -1, 1, this.perlinAccelLow, this.perlinAccelHigh);
-    this.aVelocity.y =  Utils.map(SimplexNoise.noise(0, this.perlinTime + this.perlinOffsetY), -1, 1, this.perlinAccelLow, this.perlinAccelHigh);
-  } else {
-    this.aVelocity.add(this.acceleration); // add acceleration
-  }
-
-  if (this.parent) { // parenting
-    this.initialLocation.x = this.parent.location.x;
-    this.initialLocation.y = this.parent.location.y;
-  }
-
-  this.location.x = this.initialLocation.x + Math.cos(this.aVelocity.x) * this.amplitude.x;
-  this.location.y = this.initialLocation.y + Math.sin(this.aVelocity.y) * this.amplitude.y;
-
-  if (this.pointToDirection) { // object rotates toward direction
-      velDiff = Vector.VectorSub(this.location, this.lastLocation);
-      this.angle = Utils.radiansToDegrees(Math.atan2(velDiff.y, velDiff.x));
-  }
-
-  if (this.life < this.lifespan) {
-    this.life += 1;
-  } else if (this.lifespan !== -1) {
-    System.remove(this);
-  }
-
-  this.afterStep.call(this);
-
-  this.lastLocation.x = this.location.x;
-  this.lastLocation.y = this.location.y;
-};
-
-module.exports = Oscillator;
-
-},{"bitshadowmachine":12,"quietriot":33}],18:[function(_dereq_,module,exports){
-var Item = _dereq_('bitshadowmachine').Item,
-    Mover = _dereq_('./mover'),
-    Utils = _dereq_('bitshadowmachine').Utils,
-    Vector = _dereq_('bitshadowmachine').Vector;
 
 /**
- * Creates a new Particle object.
+ * Removes all properties from the passed object.
+ * @param  {Object} obj An object.
+ * @return {Object}     The passed object.
+ */
+System._cleanObj = function(obj) {
+  for (var prop in obj) {
+    if (obj.hasOwnProperty(prop)) {
+      delete obj[prop];
+    }
+  }
+  return obj;
+};
+
+/**
+ * Removes an item from the system.
+ * @function remove
+ * @memberof System
+ * @param {Object} obj The item to remove.
+ */
+System.remove = function (obj) {
+
+  var i, max, records = System._records;
+
+  for (i = 0, max = records.length; i < max; i++) {
+    if (records[i].id === obj.id) {
+      if (records[i].el) {
+        records[i].el.style.visibility = 'hidden'; // hide item
+      }
+      System._pool[System._pool.length] = records.splice(i, 1)[0]; // move record to pool array
+      break;
+    }
+  }
+};
+
+/**
+ * Removes an item from the system.
+ * Note: Deprecated in v3. Use remove().
+ * @function remove
+ * @memberof System
+ * @param {Object} obj The item to remove.
+ */
+System.destroy = function (obj) {
+  System.remove(obj);
+};
+
+/**
+ * Iterates over records.
+ * @param {Function} [opt_function=function(){}] A function.
+ * @function loop
+ * @memberof System
+ */
+System.loop = function(opt_function) {
+
+  var i, records = System._records,
+      len = System._records.length,
+      frameFunction = opt_function || function() {};
+
+  if (!System.frameFunction) {
+    System.frameFunction = frameFunction;
+  }
+
+  for (i = len - 1; i >= 0; i -= 1) {
+
+    if (records[i] && records[i].step && !records[i].world.pauseStep) {
+
+      if (records[i].life < records[i].lifespan) {
+        records[i].life += 1;
+      } else if (records[i].lifespan !== -1) {
+        System.remove(records[i]);
+        continue;
+      }
+      records[i].step();
+    }
+  }
+  len = System._records.length; // check length in case items were removed in step()
+  for (i = len - 1; i >= 0; i -= 1) {
+    records[i].draw();
+  }
+  System.clock++;
+  if (FPSDisplay.active) {
+    FPSDisplay.update(len);
+  }
+  System.frameFunction.call(this);
+  if (typeof window.requestAnimationFrame !== 'undefined') {
+    window.requestAnimationFrame(System.loop);
+  }
+};
+
+/**
+ * Pauses the system and processes one step in records.
  *
- * @constructor
- * @extends Mover
+ * @function _stepForward
+ * @memberof System
+ * @private
  */
-function Particle(opt_options) {
-  Mover.call(this);
-}
-Utils.extend(Particle, Mover);
+System._stepForward = function() {
+
+  var i, j, max, records = System._records,
+      world, worlds = System.allWorlds();
+
+  for (i = 0, max = worlds.length; i < max; i++) {
+    world = worlds[i];
+    world.pauseStep = true;
+    for (j = records.length - 1; j >= 0; j -= 1) {
+      if (records[j].step) {
+        records[j].step();
+      }
+    }
+    for (j = records.length - 1; j >= 0; j -= 1) {
+      if (records[j].draw) {
+        records[j].draw();
+      }
+    }
+  }
+  System.clock++;
+};
 
 /**
- * Initializes Particle.
- * @param  {Object} world An instance of World.
- * @param  {Object} [opt_options=] A map of initial properties.
- * @param {Array} [opt_options.color = [200, 200, 200]] Color.
- * @param {number} [opt_options.lifespan = 50] The max life of the object. Set to -1 for infinite life.
- * @param {number} [opt_options.life = 0] The current life value. If greater than this.lifespan, object is destroyed.
- * @param {boolean} {opt_options.fade = true} If true, opacity decreases proportionally with life.
- * @param {boolean} {opt_options.shrink = true} If true, width and height decrease proportionally with life.
- * @param {boolean} [opt_options.checkWorldEdges = false] Set to true to check the object's location against the world's bounds.
- * @param {number} [opt_options.maxSpeed = 4] Maximum speed.
- * @param {number} [opt_options.zIndex = 1] The object's zIndex.
+ * Saves the mouse/touch location relative to the browser window.
+ *
+ * @function _recordMouseLoc
+ * @memberof System
+ * @private
  */
-Particle.prototype.init = function(world, opt_options) {
-  Particle._superClass.init.call(this, world, opt_options);
+System._recordMouseLoc = function(e) {
+
+  var touch, world = System.firstWorld();
+
+  System.mouse.lastLocation.x = System.mouse.location.x;
+  System.mouse.lastLocation.y = System.mouse.location.y;
+
+  if (e.changedTouches) {
+    touch = e.changedTouches[0];
+  }
+
+  /**
+   * Mapping window size to world size allows us to
+   * lead an agent around a world that's not bound
+   * to the window.
+   */
+  if (e.pageX && e.pageY) {
+    System.mouse.location.x = Utils.map(e.pageX, 0, window.innerWidth, 0, world.width);
+    System.mouse.location.y = Utils.map(e.pageY, 0, window.innerHeight, 0, world.height);
+  } else if (e.clientX && e.clientY) {
+    System.mouse.location.x = Utils.map(e.clientX, 0, window.innerWidth, 0, world.width);
+    System.mouse.location.y = Utils.map(e.clientY, 0, window.innerHeight, 0, world.height);
+  } else if (touch) {
+    System.mouse.location.x = touch.pageX;
+    System.mouse.location.y = touch.pageY;
+  }
+
+  System.mouse.velocity.x = System.mouse.lastLocation.x - System.mouse.location.x;
+  System.mouse.velocity.y = System.mouse.lastLocation.y - System.mouse.location.y;
+};
+
+/**
+ * Returns the first world in the system.
+ *
+ * @function firstWorld
+ * @memberof System
+ * @returns {null|Object} An instance of World.
+ */
+System.firstWorld = function() {
+  return this._records.length ? this._records[0] : null;
+};
+
+/**
+ * Returns all worlds.
+ *
+ * @function allWorlds
+ * @memberof System
+ * @return {Array.<World>} An array of worlds.
+ */
+System.allWorlds = function() {
+  return System.getAllItemsByName('World');
+};
+
+/**
+ * Returns an array of items created from the same constructor.
+ *
+ * @function getAllItemsByName
+ * @memberof System
+ * @param {string} name The 'name' property.
+ * @param {Array} [opt_list = this._records] An optional list of items.
+ * @returns {Array} An array of items.
+ */
+System.getAllItemsByName = function(name, opt_list) {
+
+  var i, max, arr = [],
+      list = opt_list || this._records;
+
+  for (i = 0, max = list.length; i < max; i++) {
+    if (list[i].name === name) {
+      arr[arr.length] = list[i];
+    }
+  }
+  return arr;
+};
+
+/**
+ * Returns an array of items with an attribute that matches the
+ * passed 'attr'. If 'opt_val' is passed, 'attr' must equal 'val'.
+ *
+ * @function getAllItemsByAttribute
+ * @memberof System
+ * @param {string} attr The property to match.
+ * @param {*} [opt_val=] The 'attr' parameter must equal this param.
+ * @param {string} name The item's name property must equal this param.
+ * @returns {Array} An array of items.
+ */
+System.getAllItemsByAttribute = function(attr, opt_val, opt_name) { // TODO: add test
+
+  var i, max, arr = [], records = this._records,
+      val = typeof opt_val !== 'undefined' ? opt_val : null,
+      name = opt_name || false;
+
+  for (i = 0, max = records.length; i < max; i++) {
+    if (typeof records[i][attr] !== 'undefined') {
+      if (val !== null && records[i][attr] !== val) {
+        continue;
+      }
+      if (name && records[i].name !== name) {
+        continue;
+      }
+      arr[arr.length] = records[i];
+    }
+  }
+  return arr;
+};
+
+/**
+ * Handles orientation evenst and forces the world to update its bounds.
+ *
+ * @function updateOrientation
+ * @memberof System
+ */
+System.updateOrientation = function() {
+  var worlds = System.allWorlds(),
+  i, max, l = worlds.length;
+  for (i = 0; i < l; i++) {
+    worlds[i].width = worlds[i].el.scrollWidth;
+    worlds[i].height = worlds[i].el.scrollHeight;
+  }
+};
+
+/**
+ * Handles keyup events.
+ *
+ * @function _keyup
+ * @memberof System
+ * @private
+ * @param {Object} e An event.
+ */
+System._keyup = function(e) {
+
+  var i, max, world, worlds = System.allWorlds();
+
+  switch(e.keyCode) {
+    case 39:
+      System._stepForward();
+      break;
+    case 80: // p; pause/play
+      for (i = 0, max = worlds.length; i < max; i++) {
+        world = worlds[i];
+        world.pauseStep = !world.pauseStep;
+      }
+      break;
+    case 82: // r; reset
+      System._resetSystem();
+      break;
+    case 83: // s; reset
+      System._toggleFPS();
+      break;
+  }
+};
+
+/**
+ * Resets the system.
+ *
+ * @function _resetSystem
+ * @memberof System
+ * @private
+ */
+System._resetSystem = function() {
+
+  var i, max, world, worlds = System.allWorlds();
+
+  for (i = 0, max = worlds.length; i < max; i++) {
+    world = worlds[i];
+    world.pauseStep = false;
+    world.pauseDraw = false;
+
+    while(world.el.firstChild) {
+      world.el.removeChild(world.el.firstChild);
+    }
+  }
+
+  System._records = [];
+  System._pool = [];
+  System.clock = 0;
+  System.setup(System.setupFunc);
+};
+
+/**
+ * Toggles stats display.
+ *
+ * @function _toggleFPS
+ * @memberof System
+ * @private
+ */
+System._toggleFPS = function() {
+  if (!FPSDisplay.fps) {
+    FPSDisplay.init();
+  } else {
+    FPSDisplay.active = !FPSDisplay.active;
+  }
+
+  if (!FPSDisplay.active) {
+    FPSDisplay.hide();
+  } else {
+    FPSDisplay.show();
+  }
+};
+
+module.exports = System;
+
+},{"./item":15,"./world":18,"drawing-utils-lib":12,"fpsdisplay":13,"vector2d-lib":14}],18:[function(require,module,exports){
+var Vector = require('vector2d-lib'),
+    Item = require('./item'),
+    Utils = require('drawing-utils-lib');
+
+/**
+ * Creates a new World.
+ *
+ * @param {Object} [opt_options=] A map of initial properties.
+ * @constructor
+ */
+function World(opt_options) {
+
+  Item.call(this);
 
   var options = opt_options || {};
 
-  this.color = options.color || [200, 200, 200];
-  this.lifespan = typeof options.lifespan === 'undefined' ? 50 : options.lifespan;
-  this.life = options.life || 0;
-  this.fade = typeof options.fade === 'undefined' ? true : options.fade;
-  this.shrink = typeof options.shrink === 'undefined' ? true : options.shrink;
-  this.checkWorldEdges = !!options.checkWorldEdges;
-  this.maxSpeed = typeof options.maxSpeed === 'undefined' ? 4 : options.maxSpeed;
-  this.zIndex = typeof options.zIndex === 'undefined' ? 1 : options.zIndex;
+  this.el = options.el || document.body;
+  this.name = 'World';
 
-  if (!options.acceleration) {
-    this.acceleration = new Vector(1, 1);
-    this.acceleration.normalize();
-    this.acceleration.mult(this.maxSpeed ? this.maxSpeed : 3);
-    this.acceleration.rotate(Utils.getRandomNumber(0, Math.PI * 2, true));
-  }
-  if (!options.velocity) {
-    this.velocity = new Vector();
-  }
-  this.initScale = this.scale;
+  /**
+   * Worlds do not have worlds. However, assigning an
+   * object literal makes for less conditions in the
+   * update loop.
+   */
+  this.world = {};
+}
+Utils.extend(World, Item);
+
+/**
+ * Resets all properties.
+ * @function init
+ * @memberof World
+ *
+ * @param {Object} [opt_options=] A map of initial properties.
+ * @param {number} [opt_options.width = this.el.scrollWidth] Width.
+ * @param {number} [opt_options.height = this.el.scrollHeight] Height.
+ *
+ */
+World.prototype.init = function(world, opt_options) {
+
+  World._superClass.init.call(this, this.world, opt_options);
+
+  var options = opt_options || {};
+
+  this.color = options.color || [0, 0, 0];
+  this.width = options.width || this.el.scrollWidth;
+  this.height = options.height || this.el.scrollHeight;
+  this.location = options.location || new Vector(document.body.scrollWidth / 2, document.body.scrollHeight / 2);
+  this.borderWidth = options.borderWidth || 0;
+  this.borderStyle = options.borderStyle || 'none';
+  this.borderColor = options.borderColor || [0, 0, 0];
+  this.gravity = options.gravity || new Vector(0, 1);
+  this.c = typeof options.c !== 'undefined' ? options.c : 0.1;
+  this.pauseStep = !!options.pauseStep;
+  this.pauseDraw = !!options.pauseDraw;
+  this.el.className = this.name.toLowerCase();
+  this._camera = this._camera || new Vector();
 };
 
 /**
- * Applies additional forces.
+ * Adds an item to the world's view.
+ * @param {Object} item An instance of item.
  */
-Particle.prototype.afterStep = function() {
-  if (this.fade) {
-    this.opacity = Utils.map(this.life, 0, this.lifespan, 1, 0);
-  }
-  if (this.shrink) {
-    this.scale = Utils.map(this.life, 0, this.lifespan, this.initScale, 0);
-  }
+World.prototype.add = function(item) {
+  this.el.appendChild(item);
 };
 
-module.exports = Particle;
+/**
+ * Applies forces to world.
+ * @function step
+ * @memberof World
+ */
+World.prototype.step = function() {
+  this.location.add(this._camera);
+};
 
-},{"./mover":16,"bitshadowmachine":12}],19:[function(_dereq_,module,exports){
-module.exports=_dereq_(7)
-},{}],20:[function(_dereq_,module,exports){
-arguments[4][9][0].apply(exports,arguments)
-},{"./item":22,"./system":24,"burner":28}],21:[function(_dereq_,module,exports){
-arguments[4][10][0].apply(exports,arguments)
-},{"./item":22,"./system":24,"burner":28}],22:[function(_dereq_,module,exports){
-arguments[4][11][0].apply(exports,arguments)
-},{"burner":28}],23:[function(_dereq_,module,exports){
-arguments[4][12][0].apply(exports,arguments)
-},{"./anim":20,"./animunit":21,"./item":22,"./system":24,"burner":28,"quietriot":33}],24:[function(_dereq_,module,exports){
-arguments[4][13][0].apply(exports,arguments)
-},{"./item":22,"./world":25,"burner":28,"fpsdisplay":19}],25:[function(_dereq_,module,exports){
-arguments[4][14][0].apply(exports,arguments)
-},{"./item":22,"burner":28}],26:[function(_dereq_,module,exports){
-module.exports=_dereq_(7)
-},{}],27:[function(_dereq_,module,exports){
-module.exports=_dereq_(3)
-},{"vector2d-lib":34}],28:[function(_dereq_,module,exports){
-arguments[4][4][0].apply(exports,arguments)
-},{"./item":27,"./system":29,"./world":30,"drawing-utils-lib":32,"vector2d-lib":34}],29:[function(_dereq_,module,exports){
-arguments[4][5][0].apply(exports,arguments)
-},{"./item":27,"./world":30,"drawing-utils-lib":32,"fpsdisplay":26,"vector2d-lib":34}],30:[function(_dereq_,module,exports){
-arguments[4][6][0].apply(exports,arguments)
-},{"./item":27,"drawing-utils-lib":32,"vector2d-lib":34}],31:[function(_dereq_,module,exports){
-var Utils = _dereq_('drawing-utils-lib');
+/**
+ * Updates the corresponding DOM element's style property.
+ * @function draw
+ * @memberof World
+ */
+World.prototype.draw = function() {
+  var cssText = this.getCSSText({
+    x: this.location.x - (this.width / 2),
+    y: this.location.y - (this.height / 2),
+    angle: this.angle,
+    scale: this.scale || 1,
+    width: this.width,
+    height: this.height,
+    color0: this.color[0],
+    color1: this.color[1],
+    color2: this.color[2],
+    borderWidth: this.borderWidth,
+    borderStyle: this.borderStyle,
+    borderColor1: this.borderColor[0],
+    borderColor2: this.borderColor[1],
+    borderColor3: this.borderColor[2]
+  });
+  this.el.style.cssText = cssText;
+};
+
+/**
+ * Concatenates a new cssText string.
+ *
+ * @function getCSSText
+ * @memberof World
+ * @param {Object} props A map of object properties.
+ * @returns {string} A string representing cssText.
+ */
+World.prototype.getCSSText = function(props) {
+  return Item._stylePosition.replace(/<x>/g, props.x).replace(/<y>/g, props.y).replace(/<angle>/g, props.angle).replace(/<scale>/g, props.scale) + 'width: ' + props.width + 'px; height: ' + props.height + 'px; background-color: rgb(' + props.color0 + ', ' + props.color1 + ', ' + props.color2 + '); border: ' + props.borderWidth + 'px ' + props.borderStyle + ' rgb(' + props.borderColor1 + ', ' + props.borderColor2 + ', ' + props.borderColor3 + ')';
+};
+
+module.exports = World;
+
+},{"./item":15,"drawing-utils-lib":12,"vector2d-lib":14}],19:[function(require,module,exports){
+module.exports=require(12)
+},{"/Users/vince/Dev/Foldi/tinytornado/node_modules/burner/node_modules/drawing-utils-lib/src/drawing-utils-lib.js":12}],20:[function(require,module,exports){
+var Utils = require('drawing-utils-lib');
 /**
  * Creates a new ColorPalette object.
  *
@@ -3521,16 +3370,141 @@ ColorPalette.prototype.getColor = function() {
 
 module.exports = ColorPalette;
 
-},{"drawing-utils-lib":32}],32:[function(_dereq_,module,exports){
-module.exports=_dereq_(1)
-},{}],33:[function(_dereq_,module,exports){
-module.exports=_dereq_(8)
-},{}],34:[function(_dereq_,module,exports){
-module.exports=_dereq_(2)
-},{}],35:[function(_dereq_,module,exports){
-var Burner = _dereq_('burner');
-var Utils = _dereq_('burner').Utils;
-var Vector = _dereq_('burner').Vector;
+},{"drawing-utils-lib":19}],21:[function(require,module,exports){
+/*jshint bitwise:false */
+/**
+* https://gist.github.com/304522
+* Ported from Stefan Gustavson's java implementation
+* http://staffwww.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf
+* Read Stefan's excellent paper for details on how this code works.
+*
+* @author Sean McCullough banksean@gmail.com
+*
+* You can pass in a random number generator object if you like.
+* It is assumed to have a random() method.
+*/
+
+/**
+ * @namespace
+ */
+
+var SimplexNoise = {};
+
+SimplexNoise.grad3 = [[1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],[1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],[0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]];
+SimplexNoise.p = [];
+SimplexNoise.perm = [];
+// A lookup table to traverse the simplex around a given point in 4D.
+// Details can be found where this table is used, in the 4D noise method.
+SimplexNoise.simplex = [
+  [0,1,2,3],[0,1,3,2],[0,0,0,0],[0,2,3,1],[0,0,0,0],[0,0,0,0],[0,0,0,0],[1,2,3,0],
+  [0,2,1,3],[0,0,0,0],[0,3,1,2],[0,3,2,1],[0,0,0,0],[0,0,0,0],[0,0,0,0],[1,3,2,0],
+  [0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],
+  [1,2,0,3],[0,0,0,0],[1,3,0,2],[0,0,0,0],[0,0,0,0],[0,0,0,0],[2,3,0,1],[2,3,1,0],
+  [1,0,2,3],[1,0,3,2],[0,0,0,0],[0,0,0,0],[0,0,0,0],[2,0,3,1],[0,0,0,0],[2,1,3,0],
+  [0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],
+  [2,0,1,3],[0,0,0,0],[0,0,0,0],[0,0,0,0],[3,0,1,2],[3,0,2,1],[0,0,0,0],[3,1,2,0],
+  [2,1,0,3],[0,0,0,0],[0,0,0,0],[0,0,0,0],[3,1,0,2],[0,0,0,0],[3,2,0,1],[3,2,1,0]];
+
+SimplexNoise.config = function(r) {
+
+  var i, p = SimplexNoise.p, perm = SimplexNoise.perm;
+
+  if (typeof r === 'undefined') {
+    r = Math;
+  }
+
+  for (i = 0; i < 256; i += 1) {
+    SimplexNoise.p[i] = Math.floor(r.random() * 256);
+  }
+  // To remove the need for index wrapping, double the permutation table length
+  for(i = 0; i < 512; i += 1) {
+    perm[i] = p[i & 255];
+  }
+};
+
+SimplexNoise.noise = function(xin, yin) {
+
+  var grad3 = SimplexNoise.grad3;
+  var p = SimplexNoise.p;
+  var perm = SimplexNoise.perm;
+  var simplex = SimplexNoise.simplex;
+
+  if (!p.length) {
+    SimplexNoise.config();
+  }
+
+  var n0, n1, n2; // Noise contributions from the three corners
+
+  // Skew the input space to determine which simplex cell we're in
+  var F2 = 0.5 * (Math.sqrt(3.0) - 1.0);
+  var s = (xin + yin) * F2; // Hairy factor for 2D
+  var i = Math.floor(xin + s);
+  var j = Math.floor(yin + s);
+  var G2 = (3.0 -Math.sqrt(3.0)) / 6.0;
+  var t = (i + j) * G2;
+  var X0 = i - t; // Unskew the cell origin back to (x,y) space
+  var Y0 = j - t;
+  var x0 = xin - X0; // The x,y distances from the cell origin
+  var y0 = yin - Y0;
+
+  // For the 2D case, the simplex shape is an equilateral triangle.
+  // Determine which simplex we are in.
+  var i1, j1; // Offsets for second (middle) corner of simplex in (i,j) coords
+  if (x0 > y0) { i1 = 1; j1 = 0; } // lower triangle, XY order: (0,0)->(1,0)->(1,1)
+  else { i1 = 0; j1 = 1; }      // upper triangle, YX order: (0,0)->(0,1)->(1,1)
+  // A step of (1,0) in (i,j) means a step of (1-c,-c) in (x,y), and
+  // a step of (0,1) in (i,j) means a step of (-c,1-c) in (x,y), where
+  // c = (3-sqrt(3))/6
+  var x1 = x0 - i1 + G2; // Offsets for middle corner in (x,y) unskewed coords
+  var y1 = y0 - j1 + G2;
+  var x2 = x0 - 1.0 + 2.0 * G2; // Offsets for last corner in (x,y) unskewed coords
+  var y2 = y0 - 1.0 + 2.0 * G2;
+
+  // Work out the hashed gradient indices of the three simplex corners
+  var ii = i & 255;
+  var jj = j & 255;
+  var gi0 = this.perm[ii + this.perm[jj]] % 12;
+  var gi1 = this.perm[ii + i1 + this.perm[jj + j1]] % 12;
+  var gi2 = this.perm[ii + 1 + this.perm[jj + 1]] % 12;
+
+  // Calculate the contribution from the three corners
+  var t0 = 0.5 - x0 * x0 - y0 * y0;
+  if (t0 < 0) {
+    n0 = 0.0;
+  } else {
+    t0 *= t0;
+    n0 = t0 * t0 * this.dot(this.grad3[gi0], x0, y0);  // (x,y) of grad3 used for 2D gradient
+  }
+  var t1 = 0.5 - x1 * x1 - y1 * y1;
+  if (t1 < 0) {
+    n1 = 0.0;
+  } else {
+    t1 *= t1;
+    n1 = t1 * t1 * this.dot(this.grad3[gi1], x1, y1);
+  }
+  var t2 = 0.5 - x2 * x2 - y2 * y2;
+  if (t2 < 0) {
+    n2 = 0.0;
+  } else {
+    t2 *= t2;
+    n2 = t2 * t2 * this.dot(this.grad3[gi2], x2, y2);
+  }
+  // Add contributions from each corner to get the final noise value.
+  // The result is scaled to return values in the interval [-1,1].
+  return 70.0 * (n0 + n1 + n2);
+
+};
+
+SimplexNoise.dot = function(g, x, y) {
+  return g[0] * x + g[1] * y;
+};
+
+module.exports = SimplexNoise;
+
+},{}],22:[function(require,module,exports){
+var Burner = require('burner');
+var Utils = require('burner').Utils;
+var Vector = require('burner').Vector;
 
 /**
  * Creates a new Base.
@@ -3574,11 +3548,11 @@ Base.prototype.configure = function(world) {
 
 module.exports = Base;
 
-},{"burner":28}],36:[function(_dereq_,module,exports){
-var ColorPalette = _dereq_('colorpalette');
-var System = _dereq_('bitshadowmachine').System;
-var Utils = _dereq_('burner').Utils;
-var Vector = _dereq_('burner').Vector;
+},{"burner":16}],23:[function(require,module,exports){
+var ColorPalette = require('colorpalette');
+var System = require('bitshadowmachine').System;
+var Utils = require('burner').Utils;
+var Vector = require('burner').Vector;
 
 /**
  * Creates a new DebrisBit.
@@ -3675,15 +3649,15 @@ DebrisBit.prototype.configure = function(opt_options) {
 
 module.exports = DebrisBit;
 
-},{"bitshadowmachine":23,"burner":28,"colorpalette":31}],37:[function(_dereq_,module,exports){
-var BitShadowMachine = _dereq_('bitshadowmachine');
-var Mover = _dereq_('bitshadowitems').Mover;
-var Oscillator = _dereq_('bitshadowitems').Oscillator;
-var Particle = _dereq_('bitshadowitems').Particle;
-var Utils = _dereq_('burner').Utils;
-var Vector = _dereq_('burner').Vector;
-var SimplexNoise = _dereq_('quietriot');
-var Easing = _dereq_('../easing');
+},{"bitshadowmachine":9,"burner":16,"colorpalette":20}],24:[function(require,module,exports){
+var BitShadowMachine = require('bitshadowmachine');
+var Mover = require('bitshadowitems').Mover;
+var Oscillator = require('bitshadowitems').Oscillator;
+var Particle = require('bitshadowitems').Particle;
+var Utils = require('burner').Utils;
+var Vector = require('burner').Vector;
+var SimplexNoise = require('quietriot');
+var Easing = require('../easing');
 
 /**
  * Creates a new RunnerBit.
@@ -3829,7 +3803,7 @@ RunnerBit.prototype._getNoise = function() {
 
 module.exports = RunnerBit;
 
-},{"../easing":40,"bitshadowitems":15,"bitshadowmachine":23,"burner":28,"quietriot":33}],38:[function(_dereq_,module,exports){
+},{"../easing":27,"bitshadowitems":1,"bitshadowmachine":9,"burner":16,"quietriot":21}],25:[function(require,module,exports){
 /**
  * Creates a new Shell.
  *
@@ -3858,11 +3832,11 @@ function Shell(opt_options) {
 
 module.exports = Shell;
 
-},{}],39:[function(_dereq_,module,exports){
-var ColorPalette = _dereq_('colorpalette');
-var System = _dereq_('burner').System;
-var Utils = _dereq_('burner').Utils;
-var Vector = _dereq_('burner').Vector;
+},{}],26:[function(require,module,exports){
+var ColorPalette = require('colorpalette');
+var System = require('burner').System;
+var Utils = require('burner').Utils;
+var Vector = require('burner').Vector;
 
 /**
  * Creates a new Debris.
@@ -3961,7 +3935,7 @@ Debris.prototype.configure = function(opt_options) {
 
 module.exports = Debris;
 
-},{"burner":28,"colorpalette":31}],40:[function(_dereq_,module,exports){
+},{"burner":16,"colorpalette":20}],27:[function(require,module,exports){
 /**
  * Robert Penner's easing functions. http://gizma.com/easing/
  * @namespace
@@ -4266,11 +4240,11 @@ Easing.easeInOutCirc = function (t, b, c, d) {
 
 module.exports = Easing;
 
-},{}],41:[function(_dereq_,module,exports){
-var Item = _dereq_('burner').Item,
-    System = _dereq_('burner').System,
-    Utils = _dereq_('burner').Utils,
-    Vector = _dereq_('burner').Vector;
+},{}],28:[function(require,module,exports){
+var Item = require('burner').Item,
+    System = require('burner').System,
+    Utils = require('burner').Utils,
+    Vector = require('burner').Vector;
 
 /**
  * Creates a new Mover.
@@ -4600,14 +4574,14 @@ Mover.prototype.getCSSText = function(props) {
 module.exports = Mover;
 
 
-},{"burner":28}],42:[function(_dereq_,module,exports){
-module.exports=_dereq_(41)
-},{"burner":28}],43:[function(_dereq_,module,exports){
-var Item = _dereq_('burner').Item,
-    SimplexNoise = _dereq_('quietriot'),
-    System = _dereq_('burner').System,
-    Utils = _dereq_('burner').Utils,
-    Vector = _dereq_('burner').Vector;
+},{"burner":16}],29:[function(require,module,exports){
+module.exports=require(28)
+},{"/Users/vince/Dev/Foldi/tinytornado/src/items/Mover.js":28,"burner":16}],30:[function(require,module,exports){
+var Item = require('burner').Item,
+    SimplexNoise = require('quietriot'),
+    System = require('burner').System,
+    Utils = require('burner').Utils,
+    Vector = require('burner').Vector;
 
 /**
  * Creates a new Oscillator.
@@ -4798,11 +4772,11 @@ Oscillator.prototype.getCSSText = function(props) {
 
 module.exports = Oscillator;
 
-},{"burner":28,"quietriot":33}],44:[function(_dereq_,module,exports){
-var Item = _dereq_('burner').Item,
-    Mover = _dereq_('./Mover'),
-    Utils = _dereq_('burner').Utils,
-    Vector = _dereq_('burner').Vector;
+},{"burner":16,"quietriot":21}],31:[function(require,module,exports){
+var Item = require('burner').Item,
+    Mover = require('./Mover'),
+    Utils = require('burner').Utils,
+    Vector = require('burner').Vector;
 
 /**
  * Creates a new Particle object.
@@ -4936,26 +4910,26 @@ Particle.prototype.getCSSText = function(props) {
 module.exports = Particle;
 
 
-},{"./Mover":41,"burner":28}],45:[function(_dereq_,module,exports){
+},{"./Mover":28,"burner":16}],32:[function(require,module,exports){
 module.exports = {
   Funnel: {
-    Base: _dereq_('./base'),
-    Debris: _dereq_('./debris'),
-    Spine: _dereq_('./spine'),
-    Shell: _dereq_('./shell'),
-    Runner: _dereq_('./runner')
+    Base: require('./base'),
+    Debris: require('./debris'),
+    Spine: require('./spine'),
+    Shell: require('./shell'),
+    Runner: require('./runner')
   },
   Vortex: {
-    Base: _dereq_('./base'),
-    DebrisBit: _dereq_('./bitshadow/debrisbit'),
-    Spine: _dereq_('./spine'),
-    ShellBit: _dereq_('./bitshadow/shellbit'),
-    RunnerBit: _dereq_('./bitshadow/runnerbit')
+    Base: require('./base'),
+    DebrisBit: require('./bitshadow/debrisbit'),
+    Spine: require('./spine'),
+    ShellBit: require('./bitshadow/shellbit'),
+    RunnerBit: require('./bitshadow/runnerbit')
   }
 };
 
-},{"./base":35,"./bitshadow/debrisbit":36,"./bitshadow/runnerbit":37,"./bitshadow/shellbit":38,"./debris":39,"./runner":47,"./shell":48,"./spine":49}],46:[function(_dereq_,module,exports){
-var Vector = _dereq_('burner').Vector;
+},{"./base":22,"./bitshadow/debrisbit":23,"./bitshadow/runnerbit":24,"./bitshadow/shellbit":25,"./debris":26,"./runner":34,"./shell":35,"./spine":36}],33:[function(require,module,exports){
+var Vector = require('burner').Vector;
 
 /**
  * Creates a Mask around the tornado's world.
@@ -4985,16 +4959,16 @@ Mask.prototype.configure = function(props) {
 
 module.exports = Mask;
 
-},{"burner":28}],47:[function(_dereq_,module,exports){
-var Burner = _dereq_('burner');
-var Mover = _dereq_('./items/mover');
-var Oscillator = _dereq_('./items/oscillator');
-var Particle = _dereq_('./items/particle');
-var Utils = _dereq_('burner').Utils;
-var Vector = _dereq_('burner').Vector;
-var SimplexNoise = _dereq_('quietriot');
-var Easing = _dereq_('./easing');
-var Mask = _dereq_('./mask');
+},{"burner":16}],34:[function(require,module,exports){
+var Burner = require('burner');
+var Mover = require('./items/mover');
+var Oscillator = require('./items/oscillator');
+var Particle = require('./items/particle');
+var Utils = require('burner').Utils;
+var Vector = require('burner').Vector;
+var SimplexNoise = require('quietriot');
+var Easing = require('./easing');
+var Mask = require('./mask');
 
 /**
  * Creates a new Runner.
@@ -5004,11 +4978,14 @@ var Mask = _dereq_('./mask');
  * @param {Object} shell A map of properties describing the tornado's shell (funnel).
  * @constructor
  */
-function Runner(base, debris, spine, shell) {
+function Runner(base, opt_debris, opt_spine, opt_shell) {
+  if (!base) {
+    throw new Error('Runner requires a \'base\' parameter.');
+  }
   this.base = base;
-  this.debris = debris;
-  this.spine = spine;
-  this.shell = shell;
+  this.debris = opt_debris || null;
+  this.spine = opt_spine || null;
+  this.shell = opt_shell || null;
 }
 
 /**
@@ -5068,50 +5045,57 @@ Runner.prototype._setupCallback = function(options) {
   var myBase = Burner.System.add('Oscillator', this.base);
 
   // DEBRIS
-  this.debris.configure({
-    parent: myBase
-  });
-  Burner.System.add('Mover', this.debris);
+  if (this.debris) {
+    this.debris.configure({
+      parent: myBase
+    });
+    Burner.System.add('Mover', this.debris);
+  }
 
   // SPINE
-  for (var i = 0, max = Math.floor(world.height / this.spine.density); i < max; i++) {
+  if (this.spine) {
+    for (var i = 0, max = Math.floor(world.height / this.spine.density); i < max; i++) {
 
-    var ease = Easing[this.spine.easing].call(null, i, 0, 1, max - 1);
+      var ease = Easing[this.spine.easing].call(null, i, 0, 1, max - 1);
 
-    // joints
-    var joint = Burner.System.add('Mover', {
-      parent: myBase,
-      offsetDistance: ease * world.height,
-      offsetAngle: 270,
-      opacity: this.spine.opacity,
-      afterStep: this._jointAfterStep
-    });
-    joint.index = i;
+      // joints
+      var joint = Burner.System.add('Mover', {
+        parent: myBase,
+        offsetDistance: ease * world.height,
+        offsetAngle: 270,
+        opacity: this.spine.opacity,
+        afterStep: this._jointAfterStep
+      });
+      joint.index = i;
+      joint.offsetFromAxis = this.spine.offsetFromAxis;
 
-    // use Perlin noise to generate the parent node's offset from the funnel's y-axis
-    // use easing so the effect is amplified
-    joint.offsetFromCenter = Easing.easeInSine(i, 0, 1, max - 1) *
-        SimplexNoise.noise(i * 0.1, 0) * 20;
+      // use Perlin noise to generate the parent node's offset from the funnel's y-axis
+      // use easing so the effect is amplified
+      joint.offsetFromCenter = Easing.easeInSine(i, 0, 1, max - 1) *
+          SimplexNoise.noise(i * 0.1, 0) * 20;
 
-    // pillows
-    var easeShellShape = Easing[this.shell.easing].call(null, i, 0, 1, max - 1);
+      // pillows
+      if (this.shell) {
+        var easeShellShape = Easing[this.shell.easing].call(null, i, 0, 1, max - 1);
 
-    var colorNoise = Math.floor(Utils.map(SimplexNoise.noise(i * 0.05, 0),
-        -1, 1, this.shell.colorMin, this.shell.colorMax));
+        var colorNoise = Math.floor(Utils.map(SimplexNoise.noise(i * 0.05, 0),
+            -1, 1, this.shell.colorMin, this.shell.colorMax));
 
-    Burner.System.add('Oscillator', {
-      width: 0,
-      height: 0,
-      parent: joint,
-      opacity: this.shell.opacity,
-      color: [colorNoise, colorNoise, colorNoise],
-      boxShadowBlur: (easeShellShape * this.shell.blur) + this.shell.minWidth,
-      boxShadowSpread: (easeShellShape * this.shell.spread) + this.shell.minWidth,
-      boxShadowColor: [colorNoise, colorNoise, colorNoise],
-      perlin: false,
-      amplitude: new Vector((2 - easeShellShape) * 1, 0),
-      acceleration: new Vector(1 / (i + 1), 0)
-    });
+        Burner.System.add('Oscillator', {
+          width: this.shell.width,
+          height: this.shell.height,
+          parent: joint,
+          opacity: this.shell.opacity,
+          color: [colorNoise, colorNoise, colorNoise],
+          boxShadowBlur: (easeShellShape * this.shell.blur) + this.shell.minFunnelWidth,
+          boxShadowSpread: (easeShellShape * this.shell.spread) + this.shell.minFunnelWidth,
+          boxShadowColor: [colorNoise, colorNoise, colorNoise],
+          perlin: false,
+          amplitude: new Vector((2 - easeShellShape) * 1, 0),
+          acceleration: new Vector(1 / (i + 1), 0)
+        });
+      }
+    }
   }
 
   // MASKS
@@ -5161,8 +5145,10 @@ Runner.prototype._setupCallback = function(options) {
  * @private
  */
 Runner.prototype._jointAfterStep = function() {
-  var offset = this.index * this.offsetFromCenter * Runner.noise;
-  this.location.x = this.location.x + (offset);
+  if (this.offsetFromAxis) {
+    var offset = this.index * this.offsetFromCenter * Runner.noise;
+    this.location.x = this.location.x + (offset);
+  }
 };
 
 /**
@@ -5176,12 +5162,14 @@ Runner.prototype._getNoise = function() {
 
 module.exports = Runner;
 
-},{"./easing":40,"./items/mover":42,"./items/oscillator":43,"./items/particle":44,"./mask":46,"burner":28,"quietriot":33}],48:[function(_dereq_,module,exports){
+},{"./easing":27,"./items/mover":29,"./items/oscillator":30,"./items/particle":31,"./mask":33,"burner":16,"quietriot":21}],35:[function(require,module,exports){
 /**
  * Creates a new Shell.
  *
  * @param {Object} [opt_options=] A map of initial properties.
- * @param {number} [opt_options.minWidth = 5] Minium width of the shell base.
+ * @param {number} [opt_options.itemWidth = 0] Item width.
+ * @param {number} [opt_options.itemHeight = 0] Item height.
+ * @param {number} [opt_options.minFunnelWidth = 5] Minium width of the shell base.
  * @param {number} [opt_options.opacity = 0] shell opacity.
  * @param {number} [opt_options.blur = 350] shell blur. Recommended values bw 300 - 400.
  * @param {number} [opt_options.spread = 250] shell spread. Recommended values bw 200 - 300.
@@ -5194,7 +5182,9 @@ function Shell(opt_options) {
 
   var options = opt_options || {};
 
-  this.minWidth = typeof options.minWidth !== 'undefined' ? options.minWidth : 5;
+  this.width = options.itemWidth || 0;
+  this.height = options.itemHeight || 0;
+  this.minFunnelWidth = typeof options.minFunnelWidth !== 'undefined' ? options.minFunnelWidth : 5;
   this.opacity = typeof options.opacity !== 'undefined' ? options.opacity : 0.75;
   this.blur = typeof options.blur !== 'undefined' ? options.blur : 350;
   this.spread = typeof options.spread !== 'undefined' ? options.spread : 250;
@@ -5205,7 +5195,7 @@ function Shell(opt_options) {
 
 module.exports = Shell;
 
-},{}],49:[function(_dereq_,module,exports){
+},{}],36:[function(require,module,exports){
 /**
  * Creates a new Spine.
  *
@@ -5213,6 +5203,7 @@ module.exports = Shell;
  * @param {number} [opt_options.density = 25] Determines number of joints in the spine. Lower values = more joints.
  * @param {number} [opt_options.opacity = 0] Opacity.
  * @param {string} [opt_options.easing = 'easeInCirc'] An easing function to determine joint distribution along the spine. See Easing docs for possible values.
+ * @param {boolean} [opt_options.offsetFromAxis = true] Set to false to prevent spine curvature.
  * @constructor
  */
 function Spine(opt_options) {
@@ -5222,10 +5213,10 @@ function Spine(opt_options) {
   this.density = options.density || 25;
   this.opacity = options.opacity || 0;
   this.easing = options.easing || 'easeInCirc';
+  this.offsetFromAxis = typeof options.offsetFromAxis !== 'undefined' ? options.offsetFromAxis : true;
 }
 
 module.exports = Spine;
 
-},{}]},{},[45])
-(45)
+},{}]},{},[32])(32)
 });

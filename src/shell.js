@@ -2,7 +2,9 @@
  * Creates a new Shell.
  *
  * @param {Object} [opt_options=] A map of initial properties.
- * @param {number} [opt_options.minWidth = 5] Minium width of the shell base.
+ * @param {number} [opt_options.itemWidth = 0] Item width.
+ * @param {number} [opt_options.itemHeight = 0] Item height.
+ * @param {number} [opt_options.minFunnelWidth = 5] Minium width of the shell base.
  * @param {number} [opt_options.opacity = 0] shell opacity.
  * @param {number} [opt_options.blur = 350] shell blur. Recommended values bw 300 - 400.
  * @param {number} [opt_options.spread = 250] shell spread. Recommended values bw 200 - 300.
@@ -15,7 +17,9 @@ function Shell(opt_options) {
 
   var options = opt_options || {};
 
-  this.minWidth = typeof options.minWidth !== 'undefined' ? options.minWidth : 5;
+  this.width = options.itemWidth || 0;
+  this.height = options.itemHeight || 0;
+  this.minFunnelWidth = typeof options.minFunnelWidth !== 'undefined' ? options.minFunnelWidth : 5;
   this.opacity = typeof options.opacity !== 'undefined' ? options.opacity : 0.75;
   this.blur = typeof options.blur !== 'undefined' ? options.blur : 350;
   this.spread = typeof options.spread !== 'undefined' ? options.spread : 250;

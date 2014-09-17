@@ -16,11 +16,14 @@ var Mask = require('./mask');
  * @param {Object} shell A map of properties describing the tornado's shell (funnel).
  * @constructor
  */
-function Runner(base, debris, spine, shell) {
+function Runner(base, opt_debris, opt_spine, opt_shell) {
+  if (!base) {
+    throw new Error('Runner requires a \'base\' parameter.');
+  }
   this.base = base;
-  this.debris = debris;
-  this.spine = spine;
-  this.shell = shell;
+  this.debris = opt_debris || null;
+  this.spine = opt_spine || null;
+  this.shell = opt_shell || null;
 }
 
 /**
@@ -80,50 +83,57 @@ Runner.prototype._setupCallback = function(options) {
   var myBase = Burner.System.add('Oscillator', this.base);
 
   // DEBRIS
-  this.debris.configure({
-    parent: myBase
-  });
-  Burner.System.add('Mover', this.debris);
+  if (this.debris) {
+    this.debris.configure({
+      parent: myBase
+    });
+    Burner.System.add('Mover', this.debris);
+  }
 
   // SPINE
-  for (var i = 0, max = Math.floor(world.height / this.spine.density); i < max; i++) {
+  if (this.spine) {
+    for (var i = 0, max = Math.floor(world.height / this.spine.density); i < max; i++) {
 
-    var ease = Easing[this.spine.easing].call(null, i, 0, 1, max - 1);
+      var ease = Easing[this.spine.easing].call(null, i, 0, 1, max - 1);
 
-    // joints
-    var joint = Burner.System.add('Mover', {
-      parent: myBase,
-      offsetDistance: ease * world.height,
-      offsetAngle: 270,
-      opacity: this.spine.opacity,
-      afterStep: this._jointAfterStep
-    });
-    joint.index = i;
+      // joints
+      var joint = Burner.System.add('Mover', {
+        parent: myBase,
+        offsetDistance: ease * world.height,
+        offsetAngle: 270,
+        opacity: this.spine.opacity,
+        afterStep: this._jointAfterStep
+      });
+      joint.index = i;
+      joint.offsetFromAxis = this.spine.offsetFromAxis;
 
-    // use Perlin noise to generate the parent node's offset from the funnel's y-axis
-    // use easing so the effect is amplified
-    joint.offsetFromCenter = Easing.easeInSine(i, 0, 1, max - 1) *
-        SimplexNoise.noise(i * 0.1, 0) * 20;
+      // use Perlin noise to generate the parent node's offset from the funnel's y-axis
+      // use easing so the effect is amplified
+      joint.offsetFromCenter = Easing.easeInSine(i, 0, 1, max - 1) *
+          SimplexNoise.noise(i * 0.1, 0) * 20;
 
-    // pillows
-    var easeShellShape = Easing[this.shell.easing].call(null, i, 0, 1, max - 1);
+      // pillows
+      if (this.shell) {
+        var easeShellShape = Easing[this.shell.easing].call(null, i, 0, 1, max - 1);
 
-    var colorNoise = Math.floor(Utils.map(SimplexNoise.noise(i * 0.05, 0),
-        -1, 1, this.shell.colorMin, this.shell.colorMax));
+        var colorNoise = Math.floor(Utils.map(SimplexNoise.noise(i * 0.05, 0),
+            -1, 1, this.shell.colorMin, this.shell.colorMax));
 
-    Burner.System.add('Oscillator', {
-      width: 0,
-      height: 0,
-      parent: joint,
-      opacity: this.shell.opacity,
-      color: [colorNoise, colorNoise, colorNoise],
-      boxShadowBlur: (easeShellShape * this.shell.blur) + this.shell.minWidth,
-      boxShadowSpread: (easeShellShape * this.shell.spread) + this.shell.minWidth,
-      boxShadowColor: [colorNoise, colorNoise, colorNoise],
-      perlin: false,
-      amplitude: new Vector((2 - easeShellShape) * 1, 0),
-      acceleration: new Vector(1 / (i + 1), 0)
-    });
+        Burner.System.add('Oscillator', {
+          width: this.shell.width,
+          height: this.shell.height,
+          parent: joint,
+          opacity: this.shell.opacity,
+          color: [colorNoise, colorNoise, colorNoise],
+          boxShadowBlur: (easeShellShape * this.shell.blur) + this.shell.minFunnelWidth,
+          boxShadowSpread: (easeShellShape * this.shell.spread) + this.shell.minFunnelWidth,
+          boxShadowColor: [colorNoise, colorNoise, colorNoise],
+          perlin: false,
+          amplitude: new Vector((2 - easeShellShape) * 1, 0),
+          acceleration: new Vector(1 / (i + 1), 0)
+        });
+      }
+    }
   }
 
   // MASKS
@@ -173,8 +183,10 @@ Runner.prototype._setupCallback = function(options) {
  * @private
  */
 Runner.prototype._jointAfterStep = function() {
-  var offset = this.index * this.offsetFromCenter * Runner.noise;
-  this.location.x = this.location.x + (offset);
+  if (this.offsetFromAxis) {
+    var offset = this.index * this.offsetFromCenter * Runner.noise;
+    this.location.x = this.location.x + (offset);
+  }
 };
 
 /**

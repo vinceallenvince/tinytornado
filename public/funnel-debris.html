@@ -9,39 +9,22 @@
   <title>Tiny Tornado | Funnel</title>
   <link href="css/flora.min.css" type="text/css" charset="utf-8" rel="stylesheet" />
   <script src="scripts/tinytornado.js" type="text/javascript" charset="utf-8"></script>
-  <script src="scripts/soundbed.min.js" type="text/javascript" charset="utf-8"></script>
   </head>
   <body>
     <div id="worldA"></div>
     <script type="text/javascript" charset="utf-8">
 
       var base = new TinyTornado.Funnel.Base({
-        opacity: 0
+        opacity: 1,
+        perlinSpeed: 0.0001
       });
       var debris = new TinyTornado.Funnel.Debris();
-      var spine = new TinyTornado.Funnel.Spine({
-        opacity: 0
-      });
-      var shell = new TinyTornado.Funnel.Shell();
 
-      var vortex = new TinyTornado.Funnel.Runner(base, debris, spine, shell);
+      var vortex = new TinyTornado.Funnel.Runner(base, debris);
       vortex.init({
         el: document.getElementById('worldA')
       });
 
-      var playerLow = new SoundBed.Player();
-      playerLow.init({
-        perlin: true,
-        reverb: 5,
-        oscAFreq: 60,
-        oscBFreq: 120,
-        oscARate: 0.1,
-        oscBRate: 0.12,
-        freqMin: 60,
-        freqMax: 120,
-        volumeMin: 0.5,
-        volumeMax: 1
-      });
     </script>
   </body>
 </html
