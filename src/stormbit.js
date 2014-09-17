@@ -1,5 +1,5 @@
 var ColorPalette = require('colorpalette');
-var System = require('bitshadowmachine').System;
+var BitShadowMachine = require('bitshadowmachine');
 var Utils = require('burner').Utils;
 var Vector = require('burner').Vector;
 
@@ -75,7 +75,7 @@ StormBit.prototype._beforeStep = function() {
       var lifespan = Utils.getRandomNumber(this.lifespanMin, this.lifespanMax);
       var color = Utils.getRandomNumber(this.colorMin, this.colorMax);
 
-      System.add('Particle', {
+      BitShadowMachine.System.add('Particle', {
         location: new Vector(this.parent.location.x, this.parent.location.y),
         acceleration: accel,
         scale: size,

@@ -11,19 +11,22 @@
   <script src="scripts/tinytornado.js" type="text/javascript" charset="utf-8"></script>
   </head>
   <body>
+    <div id="worldA"></div>
     <script type="text/javascript" charset="utf-8">
 
-      var base = new TinyTornado.Base({
+      var base = new TinyTornado.Funnel.Base({
         opacity: 0
       });
-      var storm = new TinyTornado.Storm();
-      var spine = new TinyTornado.Spine({
+      var storm = new TinyTornado.Funnel.Storm();
+      var spine = new TinyTornado.Funnel.Spine({
         opacity: 0
       });
-      var shell = new TinyTornado.Shell();
+      var shell = new TinyTornado.Funnel.Shell();
 
-      var vortex = new TinyTornado.Vortex(base, storm, spine, shell);
-      vortex.init();
+      var vortex = new TinyTornado.Funnel.Vortex(base, storm, spine, shell);
+      vortex.init({
+        el: document.getElementById('worldA')
+      });
 
     </script>
   </body>
