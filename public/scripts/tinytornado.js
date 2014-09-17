@@ -3575,6 +3575,393 @@ Base.prototype.configure = function(world) {
 module.exports = Base;
 
 },{"burner":28}],36:[function(_dereq_,module,exports){
+var ColorPalette = _dereq_('colorpalette');
+var System = _dereq_('bitshadowmachine').System;
+var Utils = _dereq_('burner').Utils;
+var Vector = _dereq_('burner').Vector;
+
+/**
+ * Creates a new DebrisBit.
+ * @param {Object} [opt_options=] A map of initial properties.
+ * @param {number} [opt_options.sizeMin = 1] Minimum particle size.
+ * @param {number} [opt_options.sizeMax = 3] Maximum particle size.
+ * @param {number} [opt_options.speedMin = 1] Minimum particle speed.
+ * @param {number} [opt_options.speedMax = 20] Maximum particle speed.
+ * @param {number} [opt_options.opacityMin = 0.1] Minimum opacity.
+ * @param {number} [opt_options.opacityMax = 0.2] Maximum opacity.
+ * @param {number} [opt_options.lifespanMin = 70] Minimum lifespan.
+ * @param {number} [opt_options.lifespanMax = 120] Maximum lifespan.
+ * @param {number} [opt_options.colorMin = 100] Minimum color. Valid values bw 0 - 255.
+ * @param {number} [opt_options.colorMax = 200] Maximum color. Valid values bw 0 - 255.
+ * @constructor
+ */
+function DebrisBit(opt_options) {
+
+  var options = opt_options || {};
+
+  this.sizeMin = typeof options.sizeMin !== 'undefined' ? options.sizeMin : 1;
+  this.sizeMax = typeof options.sizeMax !== 'undefined' ? options.sizeMax : 2;
+  this.speedMin = typeof options.speedMin !== 'undefined' ? options.speedMin : 1;
+  this.speedMax = typeof options.speedMax !== 'undefined' ? options.speedMax : 30;
+  this.opacityMin = typeof options.opacityMin !== 'undefined' ? options.opacityMin : 0.05;
+  this.opacityMax = typeof options.opacityMax !== 'undefined' ? options.opacityMax : 0.3;
+  this.lifespanMin = typeof options.lifespanMin !== 'undefined' ? options.lifespanMin : 70;
+  this.lifespanMax = typeof options.lifespanMax !== 'undefined' ? options.lifespanMax : 120;
+  this.colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 100;
+  this.colorMax = typeof options.colorMax !== 'undefined' ? options.colorMax : 200;
+  this.rate = options.rate || 1;
+  this.fade = !!options.fade;
+
+  this.width = 0;
+  this.height = 0;
+  this.lifespan = -1;
+  this.startColor = [100, 100, 100]; // TODO: make these options
+  this.endColor = [200, 200, 200];
+  this.pl = new ColorPalette();
+  this.pl.addColor({ // adds a random sampling of colors to palette
+    min: 12,
+    max: 24,
+    startColor: this.startColor,
+    endColor: this.endColor
+  });
+  this.opacity = 0;
+  this.beforeStep = this._beforeStep.bind(this);
+
+}
+
+/**
+ * Called before each step function.
+ * @private
+ * @memberOf DebrisBit
+ */
+DebrisBit.prototype._beforeStep = function() {
+
+  for (var i = 0; i < 1; i++) {
+
+    var accel = new Vector(1, 1);
+    accel.normalize();
+    accel.mult(Utils.getRandomNumber(0.1, 0.25, true));
+    accel.rotate(Utils.degreesToRadians(Utils.getRandomNumber(140, 310, true)));
+    this.acceleration = accel;
+
+    var size = Utils.getRandomNumber(this.sizeMin, this.sizeMax, this.sizeMin || this.sizeMax);
+    var maxSpeed = Utils.getRandomNumber(this.speedMin, this.speedMax, true);
+    var opacity = Utils.map(size, this.sizeMin, this.sizeMax, this.opacityMax, this.opacityMin);
+    var lifespan = Utils.getRandomNumber(this.lifespanMin, this.lifespanMax);
+    var color = Utils.getRandomNumber(this.colorMin, this.colorMax);
+
+    System.add('Particle', {
+      location: new Vector(this.parent.location.x, this.parent.location.y),
+      acceleration: accel,
+      scale: size,
+      maxSpeed: maxSpeed,
+      opacity: opacity,
+      fade: this.fade,
+      lifespan: lifespan
+    });
+  }
+};
+
+/**
+ * Configures an instance of DebrisBit.
+ * @param {Object} [opt_options=] A map of options.
+ * @param {Object} [opt_options.parent = null] The DebrisBit's parent.
+ * @memberOf DebrisBit
+ */
+DebrisBit.prototype.configure = function(opt_options) {
+  var options = opt_options || {};
+  this.parent = options.parent || null;
+};
+
+module.exports = DebrisBit;
+
+},{"bitshadowmachine":23,"burner":28,"colorpalette":31}],37:[function(_dereq_,module,exports){
+var BitShadowMachine = _dereq_('bitshadowmachine');
+var Mover = _dereq_('bitshadowitems').Mover;
+var Oscillator = _dereq_('bitshadowitems').Oscillator;
+var Particle = _dereq_('bitshadowitems').Particle;
+var Utils = _dereq_('burner').Utils;
+var Vector = _dereq_('burner').Vector;
+var SimplexNoise = _dereq_('quietriot');
+var Easing = _dereq_('../easing');
+
+/**
+ * Creates a new RunnerBit.
+ * @param {Object} base A map of properties describing the base of the tornado.
+ * @param {Object} debris A map of properties describing the debris at the base of the tornado.
+ * @param {Object} spine A map of properties describing the tornado's spine.
+ * @param {Object} shell A map of properties describing the tornado's shell (funnel).
+ * @constructor
+ */
+function RunnerBit(base, debris, spine, shell) {
+  this.base = base;
+  this.debris = debris;
+  this.spine = spine;
+  this.shell = shell;
+}
+
+/**
+ * Holds a Perlin noise value.
+ * @type {Number}
+ * @memberof RunnerBit
+ */
+RunnerBit.noise = 0;
+
+/**
+ * Initializes an instance of RunnerBit.
+ * @param {Object} [opt_options=] A map of initial world properties.
+ * @param {Object} [opt_options.el = document.body] World's DOM object.
+ * @param {number} [opt_options.width = 800] World width in pixels.
+ * @param {number} [opt_options.height = 600] World height in pixels.
+ * @param {number} [opt_options.borderWidth = 1] World border widthin pixels.
+ * @param {string} [opt_options.borderStyle = 'solid'] World border style.
+ * @param {Object} [opt_options.borderColor = 0, 0, 0] World border color.
+ * @memberof RunnerBit
+ */
+RunnerBit.prototype.init = function(opt_options) {
+
+  var options = opt_options || {};
+
+  BitShadowMachine.System.Classes = {
+    Mover: Mover,
+    Oscillator: Oscillator,
+    Particle: Particle
+  };
+  BitShadowMachine.System.setup(this._setupCallback.bind(this, options));
+  BitShadowMachine.System.clock = 10000; // advance the clock so we start deeper in the noise space
+  BitShadowMachine.System.loop(this._getNoise.bind(this));
+};
+
+/**
+ * Sets up the world and items.
+ * @param {Object} options World options.
+ * @memberof RunnerBit
+ * @private
+ */
+RunnerBit.prototype._setupCallback = function(options) {
+
+  var rand = Utils.getRandomNumber,
+      map = Utils.map;
+
+  var world = BitShadowMachine.System.add('World', {
+    el: options.el || document.body,
+    resolution: options.resolution || 4,
+    color: options.color || [40, 40, 40],
+    width: options.width || 800,
+    height: options.height || 600,
+    gravity: new Vector(),
+    c: 0
+  });
+
+  // BASE
+  this.base.configure(world);
+  var myBase = BitShadowMachine.System.add('Oscillator', this.base);
+
+  // DEBRIS
+  this.debris.configure({
+    parent: myBase
+  });
+  BitShadowMachine.System.add('Mover', this.debris);
+
+  // SPINE
+  for (var i = 0, max = Math.floor(world.height / this.spine.density); i < max; i++) {
+
+    var ease = Easing[this.spine.easing].call(null, i, 0, 1, max - 1);
+
+    // joints
+    var joint = BitShadowMachine.System.add('Mover', {
+      parent: myBase,
+      offsetDistance: ease * world.height,
+      offsetAngle: 270,
+      opacity: this.spine.opacity,
+      afterStep: this._jointAfterStep
+    });
+    joint.index = i;
+
+    // use Perlin noise to generate the parent node's offset from the funnel's y-axis
+    // use easing so the effect is amplified
+    joint.offsetFromCenter = Easing.easeInSine(i, 0, 1, max - 1) *
+        SimplexNoise.noise(i * 0.1, 0) * 10;
+
+    // pillows
+    var easeShellShape = Easing[this.shell.easing].call(null, i, 0, 1, max - 1);
+
+    var colorNoise = Math.floor(Utils.map(SimplexNoise.noise(i * 0.05, 0),
+        -1, 1, this.shell.colorMin, this.shell.colorMax));
+
+    for (var j = 0; j < (i + 1) * 4; j++) {
+
+      var scale = (easeShellShape * this.shell.maxScale) + this.shell.minScale;
+      BitShadowMachine.System.add('Oscillator', {
+        perlin: false,
+        parent: joint,
+        blur: easeShellShape,
+        color: [colorNoise, colorNoise, colorNoise],
+        opacity: Utils.map(scale, this.shell.minScale, this.shell.maxScale, 0.3, 0.1),
+        scale: scale,
+        amplitude: new Vector(Utils.map(easeShellShape, 0, 1, 1, rand(50, 100)),
+            Utils.map(easeShellShape, 0, 1, 1, rand(10, 64))),
+        acceleration: new BitShadowMachine.Vector(2 / (i + 1), 0.05),
+        aVelocity: new BitShadowMachine.Vector(rand(0, 40), rand(0, 40))
+      });
+    }
+  }
+};
+
+/**
+ * Called at the end of the joints' step function.
+ * @memberof RunnerBit
+ * @private
+ */
+RunnerBit.prototype._jointAfterStep = function() {
+  var offset = this.index * this.offsetFromCenter * RunnerBit.noise;
+  this.location.x = this.location.x + offset;
+};
+
+/**
+ * Called at the end of each animation frame.
+ * @memberof RunnerBit
+ * @private
+ */
+RunnerBit.prototype._getNoise = function() {
+  RunnerBit.noise = SimplexNoise.noise(BitShadowMachine.System.clock * 0.0001, 0);
+};
+
+module.exports = RunnerBit;
+
+},{"../easing":40,"bitshadowitems":15,"bitshadowmachine":23,"burner":28,"quietriot":33}],38:[function(_dereq_,module,exports){
+/**
+ * Creates a new Shell.
+ *
+ * @param {Object} [opt_options=] A map of initial properties.
+ * @param {number} [opt_options.minScale = 0.3] Minium width of the shell base.
+ * @param {number} [opt_options.opacity = 0] shell opacity.
+ * @param {number} [opt_options.blur = 350] shell blur. Recommended values bw 300 - 400.
+ * @param {number} [opt_options.spread = 250] shell spread. Recommended values bw 200 - 300.
+ * @param {string} [opt_options.easing = 'easeInExpo'] An easing function to determine shell shape along the spine. See Easing docs for possible values.
+ * @param {number} [opt_options.colorMin = 50] Minimum color. Valid values bw 0 - 255.
+ * @param {number} [opt_options.colorMax = 255] Maximum color. Valid values bw 0 - 255.
+ * @constructor
+ */
+function Shell(opt_options) {
+
+  var options = opt_options || {};
+
+  this.minScale = typeof options.minScale !== 'undefined' ? options.minScale : 0.1;
+  this.maxScale = typeof options.maxScale !== 'undefined' ? options.maxScale : 8;
+  this.opacity = typeof options.opacity !== 'undefined' ? options.opacity : 0.75;
+  this.blur = typeof options.blur !== 'undefined' ? options.blur : 30;
+  this.easing = options.easing || 'easeInExpo';
+  this.colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 100;
+  this.colorMax = typeof options.colorMax !== 'undefined' ? options.colorMax : 255;
+}
+
+module.exports = Shell;
+
+},{}],39:[function(_dereq_,module,exports){
+var ColorPalette = _dereq_('colorpalette');
+var System = _dereq_('burner').System;
+var Utils = _dereq_('burner').Utils;
+var Vector = _dereq_('burner').Vector;
+
+/**
+ * Creates a new Debris.
+ * @param {Object} [opt_options=] A map of initial properties.
+ * @param {number} [opt_options.sizeMin = 1] Minimum particle size.
+ * @param {number} [opt_options.sizeMax = 3] Maximum particle size.
+ * @param {number} [opt_options.speedMin = 1] Minimum particle speed.
+ * @param {number} [opt_options.speedMax = 20] Maximum particle speed.
+ * @param {number} [opt_options.opacityMin = 0.1] Minimum opacity.
+ * @param {number} [opt_options.opacityMax = 0.2] Maximum opacity.
+ * @param {number} [opt_options.lifespanMin = 70] Minimum lifespan.
+ * @param {number} [opt_options.lifespanMax = 120] Maximum lifespan.
+ * @param {number} [opt_options.colorMin = 100] Minimum color. Valid values bw 0 - 255.
+ * @param {number} [opt_options.colorMax = 200] Maximum color. Valid values bw 0 - 255.
+ * @constructor
+ */
+function Debris(opt_options) {
+
+  var options = opt_options || {};
+
+  this.sizeMin = typeof options.sizeMin !== 'undefined' ? options.sizeMin : 1;
+  this.sizeMax = typeof options.sizeMax !== 'undefined' ? options.sizeMax : 3;
+  this.speedMin = typeof options.speedMin !== 'undefined' ? options.speedMin : 1;
+  this.speedMax = typeof options.speedMax !== 'undefined' ? options.speedMax : 30;
+  this.opacityMin = typeof options.opacityMin !== 'undefined' ? options.opacityMin : 0.1;
+  this.opacityMax = typeof options.opacityMax !== 'undefined' ? options.opacityMax : 0.7;
+  this.lifespanMin = typeof options.lifespanMin !== 'undefined' ? options.lifespanMin : 70;
+  this.lifespanMax = typeof options.lifespanMax !== 'undefined' ? options.lifespanMax : 120;
+  this.colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 100;
+  this.colorMax = typeof options.colorMax !== 'undefined' ? options.colorMax : 200;
+
+  this.width = 0;
+  this.height = 0;
+  this.lifespan = -1;
+  this.startColor = [100, 100, 100]; // TODO: make these options
+  this.endColor = [200, 200, 200];
+  this.pl = new ColorPalette();
+  this.pl.addColor({ // adds a random sampling of colors to palette
+    min: 12,
+    max: 24,
+    startColor: this.startColor,
+    endColor: this.endColor
+  });
+
+  this.beforeStep = this._beforeStep.bind(this);
+
+}
+
+/**
+ * Called before each step function.
+ * @private
+ * @memberOf Debris
+ */
+Debris.prototype._beforeStep = function() {
+
+  if ((System.clock % 3) === 0) {
+
+    var accel = new Vector(1, 1);
+    accel.normalize();
+    accel.mult(Utils.getRandomNumber(0.1, 1, true));
+    accel.rotate(Utils.degreesToRadians(Utils.getRandomNumber(140, 310)));
+    this.acceleration = accel;
+
+    var size = Utils.getRandomNumber(this.sizeMin, this.sizeMax, this.sizeMin || this.sizeMax);
+    var maxSpeed = Utils.getRandomNumber(this.speedMin, this.speedMax, true);
+    var opacity = Utils.getRandomNumber(this.opacityMin, this.opacityMax, true);
+    var lifespan = Utils.getRandomNumber(this.lifespanMin, this.lifespanMax, true);
+    var color = Utils.getRandomNumber(this.colorMin, this.colorMax);
+
+    System.add('Particle', {
+      location: new Vector(this.parent.location.x, this.parent.location.y),
+      acceleration: accel,
+      width: 0,
+      height: 0,
+      borderWidth: 0,
+      boxShadowBlur: size * 10,
+      boxShadowSpread: size * 3,
+      boxShadowColor: this.pl.getColor(),
+      maxSpeed: maxSpeed,
+      opacity: opacity,
+      lifespan: lifespan
+    });
+  }
+};
+
+/**
+ * Configures an instance of Debris.
+ * @param {Object} [opt_options=] A map of options.
+ * @param {Object} [opt_options.parent = null] The Debris' parent.
+ * @memberOf Debris
+ */
+Debris.prototype.configure = function(opt_options) {
+  var options = opt_options || {};
+  this.parent = options.parent || null;
+};
+
+module.exports = Debris;
+
+},{"burner":28,"colorpalette":31}],40:[function(_dereq_,module,exports){
 /**
  * Robert Penner's easing functions. http://gizma.com/easing/
  * @namespace
@@ -3879,7 +4266,7 @@ Easing.easeInOutCirc = function (t, b, c, d) {
 
 module.exports = Easing;
 
-},{}],37:[function(_dereq_,module,exports){
+},{}],41:[function(_dereq_,module,exports){
 var Item = _dereq_('burner').Item,
     System = _dereq_('burner').System,
     Utils = _dereq_('burner').Utils,
@@ -4213,9 +4600,9 @@ Mover.prototype.getCSSText = function(props) {
 module.exports = Mover;
 
 
-},{"burner":28}],38:[function(_dereq_,module,exports){
-module.exports=_dereq_(37)
-},{"burner":28}],39:[function(_dereq_,module,exports){
+},{"burner":28}],42:[function(_dereq_,module,exports){
+module.exports=_dereq_(41)
+},{"burner":28}],43:[function(_dereq_,module,exports){
 var Item = _dereq_('burner').Item,
     SimplexNoise = _dereq_('quietriot'),
     System = _dereq_('burner').System,
@@ -4411,7 +4798,7 @@ Oscillator.prototype.getCSSText = function(props) {
 
 module.exports = Oscillator;
 
-},{"burner":28,"quietriot":33}],40:[function(_dereq_,module,exports){
+},{"burner":28,"quietriot":33}],44:[function(_dereq_,module,exports){
 var Item = _dereq_('burner').Item,
     Mover = _dereq_('./Mover'),
     Utils = _dereq_('burner').Utils,
@@ -4549,38 +4936,25 @@ Particle.prototype.getCSSText = function(props) {
 module.exports = Particle;
 
 
-},{"./Mover":37,"burner":28}],41:[function(_dereq_,module,exports){
-/*module.exports = {
-  Base: require('./base'),
-  Storm: require('./storm'),
-  //StormBit: require('./stormbit'),
-  Spine: require('./spine'),
-  Shell: require('./shell'),
-  //ShellBit: require('./shellbit'),
-  Vortex: require('./vortex'),
-  //VortexBit: require('./vortexbit')
-};*/
-
-// TODO:
-
+},{"./Mover":41,"burner":28}],45:[function(_dereq_,module,exports){
 module.exports = {
   Funnel: {
     Base: _dereq_('./base'),
-    Storm: _dereq_('./storm'),
+    Debris: _dereq_('./debris'),
     Spine: _dereq_('./spine'),
     Shell: _dereq_('./shell'),
-    Vortex: _dereq_('./vortex')
+    Runner: _dereq_('./runner')
   },
   Vortex: {
     Base: _dereq_('./base'),
-    StormBit: _dereq_('./stormbit'),
+    DebrisBit: _dereq_('./bitshadow/debrisbit'),
     Spine: _dereq_('./spine'),
-    ShellBit: _dereq_('./shellbit'),
-    VortexBit: _dereq_('./vortexbit')
+    ShellBit: _dereq_('./bitshadow/shellbit'),
+    RunnerBit: _dereq_('./bitshadow/runnerbit')
   }
 };
 
-},{"./base":35,"./shell":43,"./shellbit":44,"./spine":45,"./storm":46,"./stormbit":47,"./vortex":48,"./vortexbit":49}],42:[function(_dereq_,module,exports){
+},{"./base":35,"./bitshadow/debrisbit":36,"./bitshadow/runnerbit":37,"./bitshadow/shellbit":38,"./debris":39,"./runner":47,"./shell":48,"./spine":49}],46:[function(_dereq_,module,exports){
 var Vector = _dereq_('burner').Vector;
 
 /**
@@ -4611,294 +4985,7 @@ Mask.prototype.configure = function(props) {
 
 module.exports = Mask;
 
-},{"burner":28}],43:[function(_dereq_,module,exports){
-/**
- * Creates a new Shell.
- *
- * @param {Object} [opt_options=] A map of initial properties.
- * @param {number} [opt_options.minWidth = 5] Minium width of the shell base.
- * @param {number} [opt_options.opacity = 0] shell opacity.
- * @param {number} [opt_options.blur = 350] shell blur. Recommended values bw 300 - 400.
- * @param {number} [opt_options.spread = 250] shell spread. Recommended values bw 200 - 300.
- * @param {string} [opt_options.easing = 'easeInExpo'] An easing function to determine shell shape along the spine. See Easing docs for possible values.
- * @param {number} [opt_options.colorMin = 50] Minimum color. Valid values bw 0 - 255.
- * @param {number} [opt_options.colorMax = 255] Maximum color. Valid values bw 0 - 255.
- * @constructor
- */
-function Shell(opt_options) {
-
-  var options = opt_options || {};
-
-  this.minWidth = typeof options.minWidth !== 'undefined' ? options.minWidth : 5;
-  this.opacity = typeof options.opacity !== 'undefined' ? options.opacity : 0.75;
-  this.blur = typeof options.blur !== 'undefined' ? options.blur : 350;
-  this.spread = typeof options.spread !== 'undefined' ? options.spread : 250;
-  this.easing = options.easing || 'easeInExpo';
-  this.colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 50;
-  this.colorMax = typeof options.colorMax !== 'undefined' ? options.colorMax : 255;
-}
-
-module.exports = Shell;
-
-},{}],44:[function(_dereq_,module,exports){
-/**
- * Creates a new Shell.
- *
- * @param {Object} [opt_options=] A map of initial properties.
- * @param {number} [opt_options.minScale = 0.3] Minium width of the shell base.
- * @param {number} [opt_options.opacity = 0] shell opacity.
- * @param {number} [opt_options.blur = 350] shell blur. Recommended values bw 300 - 400.
- * @param {number} [opt_options.spread = 250] shell spread. Recommended values bw 200 - 300.
- * @param {string} [opt_options.easing = 'easeInExpo'] An easing function to determine shell shape along the spine. See Easing docs for possible values.
- * @param {number} [opt_options.colorMin = 50] Minimum color. Valid values bw 0 - 255.
- * @param {number} [opt_options.colorMax = 255] Maximum color. Valid values bw 0 - 255.
- * @constructor
- */
-function Shell(opt_options) {
-
-  var options = opt_options || {};
-
-  this.minScale = typeof options.minScale !== 'undefined' ? options.minScale : 0.1;
-  this.maxScale = typeof options.maxScale !== 'undefined' ? options.maxScale : 8;
-  this.opacity = typeof options.opacity !== 'undefined' ? options.opacity : 0.75;
-  this.blur = typeof options.blur !== 'undefined' ? options.blur : 30;
-  this.easing = options.easing || 'easeInExpo';
-  this.colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 100;
-  this.colorMax = typeof options.colorMax !== 'undefined' ? options.colorMax : 255;
-}
-
-module.exports = Shell;
-
-},{}],45:[function(_dereq_,module,exports){
-/**
- * Creates a new Spine.
- *
- * @param {Object} [opt_options=] A map of initial joint properties.
- * @param {number} [opt_options.density = 25] Determines number of joints in the spine. Lower values = more joints.
- * @param {number} [opt_options.opacity = 0] Opacity.
- * @param {string} [opt_options.easing = 'easeInCirc'] An easing function to determine joint distribution along the spine. See Easing docs for possible values.
- * @constructor
- */
-function Spine(opt_options) {
-
-  var options = opt_options || {};
-
-  this.density = options.density || 25;
-  this.opacity = options.opacity || 0;
-  this.easing = options.easing || 'easeInCirc';
-}
-
-module.exports = Spine;
-
-},{}],46:[function(_dereq_,module,exports){
-var ColorPalette = _dereq_('colorpalette');
-var System = _dereq_('burner').System;
-var Utils = _dereq_('burner').Utils;
-var Vector = _dereq_('burner').Vector;
-
-/**
- * Creates a new Storm.
- * @param {Object} [opt_options=] A map of initial properties.
- * @param {number} [opt_options.sizeMin = 1] Minimum particle size.
- * @param {number} [opt_options.sizeMax = 3] Maximum particle size.
- * @param {number} [opt_options.speedMin = 1] Minimum particle speed.
- * @param {number} [opt_options.speedMax = 20] Maximum particle speed.
- * @param {number} [opt_options.opacityMin = 0.1] Minimum opacity.
- * @param {number} [opt_options.opacityMax = 0.2] Maximum opacity.
- * @param {number} [opt_options.lifespanMin = 70] Minimum lifespan.
- * @param {number} [opt_options.lifespanMax = 120] Maximum lifespan.
- * @param {number} [opt_options.colorMin = 100] Minimum color. Valid values bw 0 - 255.
- * @param {number} [opt_options.colorMax = 200] Maximum color. Valid values bw 0 - 255.
- * @constructor
- */
-function Storm(opt_options) {
-
-  var options = opt_options || {};
-
-  this.sizeMin = typeof options.sizeMin !== 'undefined' ? options.sizeMin : 1;
-  this.sizeMax = typeof options.sizeMax !== 'undefined' ? options.sizeMax : 3;
-  this.speedMin = typeof options.speedMin !== 'undefined' ? options.speedMin : 1;
-  this.speedMax = typeof options.speedMax !== 'undefined' ? options.speedMax : 30;
-  this.opacityMin = typeof options.opacityMin !== 'undefined' ? options.opacityMin : 0.1;
-  this.opacityMax = typeof options.opacityMax !== 'undefined' ? options.opacityMax : 0.7;
-  this.lifespanMin = typeof options.lifespanMin !== 'undefined' ? options.lifespanMin : 70;
-  this.lifespanMax = typeof options.lifespanMax !== 'undefined' ? options.lifespanMax : 120;
-  this.colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 100;
-  this.colorMax = typeof options.colorMax !== 'undefined' ? options.colorMax : 200;
-
-  this.width = 0;
-  this.height = 0;
-  this.lifespan = -1;
-  this.startColor = [100, 100, 100]; // TODO: make these options
-  this.endColor = [200, 200, 200];
-  this.pl = new ColorPalette();
-  this.pl.addColor({ // adds a random sampling of colors to palette
-    min: 12,
-    max: 24,
-    startColor: this.startColor,
-    endColor: this.endColor
-  });
-
-  this.beforeStep = this._beforeStep.bind(this);
-
-}
-
-/**
- * Called before each step function.
- * @private
- * @memberOf Storm
- */
-Storm.prototype._beforeStep = function() {
-
-  if ((System.clock % 3) === 0) {
-
-    var accel = new Vector(1, 1);
-    accel.normalize();
-    accel.mult(Utils.getRandomNumber(0.1, 1, true));
-    accel.rotate(Utils.degreesToRadians(Utils.getRandomNumber(140, 310)));
-    this.acceleration = accel;
-
-    var size = Utils.getRandomNumber(this.sizeMin, this.sizeMax, this.sizeMin || this.sizeMax);
-    var maxSpeed = Utils.getRandomNumber(this.speedMin, this.speedMax, true);
-    var opacity = Utils.getRandomNumber(this.opacityMin, this.opacityMax, true);
-    var lifespan = Utils.getRandomNumber(this.lifespanMin, this.lifespanMax, true);
-    var color = Utils.getRandomNumber(this.colorMin, this.colorMax);
-
-    System.add('Particle', {
-      location: new Vector(this.parent.location.x, this.parent.location.y),
-      acceleration: accel,
-      width: 0,
-      height: 0,
-      borderWidth: 0,
-      boxShadowBlur: size * 10,
-      boxShadowSpread: size * 3,
-      boxShadowColor: this.pl.getColor(),
-      maxSpeed: maxSpeed,
-      opacity: opacity,
-      lifespan: lifespan
-    });
-  }
-};
-
-/**
- * Configures an instance of Storm.
- * @param {Object} [opt_options=] A map of options.
- * @param {Object} [opt_options.parent = null] The storm's parent.
- * @memberOf Storm
- */
-Storm.prototype.configure = function(opt_options) {
-  var options = opt_options || {};
-  this.parent = options.parent || null;
-};
-
-module.exports = Storm;
-
-},{"burner":28,"colorpalette":31}],47:[function(_dereq_,module,exports){
-var ColorPalette = _dereq_('colorpalette');
-var BitShadowMachine = _dereq_('bitshadowmachine');
-var Utils = _dereq_('burner').Utils;
-var Vector = _dereq_('burner').Vector;
-
-/**
- * Creates a new StormBit.
- * @param {Object} [opt_options=] A map of initial properties.
- * @param {number} [opt_options.sizeMin = 1] Minimum particle size.
- * @param {number} [opt_options.sizeMax = 3] Maximum particle size.
- * @param {number} [opt_options.speedMin = 1] Minimum particle speed.
- * @param {number} [opt_options.speedMax = 20] Maximum particle speed.
- * @param {number} [opt_options.opacityMin = 0.1] Minimum opacity.
- * @param {number} [opt_options.opacityMax = 0.2] Maximum opacity.
- * @param {number} [opt_options.lifespanMin = 70] Minimum lifespan.
- * @param {number} [opt_options.lifespanMax = 120] Maximum lifespan.
- * @param {number} [opt_options.colorMin = 100] Minimum color. Valid values bw 0 - 255.
- * @param {number} [opt_options.colorMax = 200] Maximum color. Valid values bw 0 - 255.
- * @constructor
- */
-function StormBit(opt_options) {
-
-  var options = opt_options || {};
-
-  this.sizeMin = typeof options.sizeMin !== 'undefined' ? options.sizeMin : 1;
-  this.sizeMax = typeof options.sizeMax !== 'undefined' ? options.sizeMax : 2;
-  this.speedMin = typeof options.speedMin !== 'undefined' ? options.speedMin : 1;
-  this.speedMax = typeof options.speedMax !== 'undefined' ? options.speedMax : 30;
-  this.opacityMin = typeof options.opacityMin !== 'undefined' ? options.opacityMin : 0.05;
-  this.opacityMax = typeof options.opacityMax !== 'undefined' ? options.opacityMax : 0.3;
-  this.lifespanMin = typeof options.lifespanMin !== 'undefined' ? options.lifespanMin : 70;
-  this.lifespanMax = typeof options.lifespanMax !== 'undefined' ? options.lifespanMax : 120;
-  this.colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 100;
-  this.colorMax = typeof options.colorMax !== 'undefined' ? options.colorMax : 200;
-  this.rate = options.rate || 1;
-  this.fade = !!options.fade;
-
-  this.width = 0;
-  this.height = 0;
-  this.lifespan = -1;
-  this.startColor = [100, 100, 100]; // TODO: make these options
-  this.endColor = [200, 200, 200];
-  this.pl = new ColorPalette();
-  this.pl.addColor({ // adds a random sampling of colors to palette
-    min: 12,
-    max: 24,
-    startColor: this.startColor,
-    endColor: this.endColor
-  });
-  this.opacity = 0;
-  this.beforeStep = this._beforeStep.bind(this);
-
-}
-
-/**
- * Called before each step function.
- * @private
- * @memberOf StormBit
- */
-StormBit.prototype._beforeStep = function() {
-
-  //if ((System.clock % this.rate) === 0) {
-
-    for (var i = 0; i < 1; i++) {
-
-      var accel = new Vector(1, 1);
-      accel.normalize();
-      accel.mult(Utils.getRandomNumber(0.1, 0.25, true));
-      accel.rotate(Utils.degreesToRadians(Utils.getRandomNumber(140, 310, true)));
-      this.acceleration = accel;
-
-      var size = Utils.getRandomNumber(this.sizeMin, this.sizeMax, this.sizeMin || this.sizeMax);
-      var maxSpeed = Utils.getRandomNumber(this.speedMin, this.speedMax, true);
-      var opacity = Utils.map(size, this.sizeMin, this.sizeMax, this.opacityMax, this.opacityMin);
-      var lifespan = Utils.getRandomNumber(this.lifespanMin, this.lifespanMax);
-      var color = Utils.getRandomNumber(this.colorMin, this.colorMax);
-
-      BitShadowMachine.System.add('Particle', {
-        location: new Vector(this.parent.location.x, this.parent.location.y),
-        acceleration: accel,
-        scale: size,
-        maxSpeed: maxSpeed,
-        opacity: opacity,
-        fade: this.fade,
-        lifespan: lifespan
-      });
-
-    }
-  //}
-};
-
-/**
- * Configures an instance of StormBit.
- * @param {Object} [opt_options=] A map of options.
- * @param {Object} [opt_options.parent = null] The StormBit's parent.
- * @memberOf StormBit
- */
-StormBit.prototype.configure = function(opt_options) {
-  var options = opt_options || {};
-  this.parent = options.parent || null;
-};
-
-module.exports = StormBit;
-
-},{"bitshadowmachine":23,"burner":28,"colorpalette":31}],48:[function(_dereq_,module,exports){
+},{"burner":28}],47:[function(_dereq_,module,exports){
 var Burner = _dereq_('burner');
 var Mover = _dereq_('./items/mover');
 var Oscillator = _dereq_('./items/oscillator');
@@ -4910,29 +4997,29 @@ var Easing = _dereq_('./easing');
 var Mask = _dereq_('./mask');
 
 /**
- * Creates a new Vortex.
+ * Creates a new Runner.
  * @param {Object} base A map of properties describing the base of the tornado.
- * @param {Object} storm A map of properties describing the storm at the base of the tornado.
+ * @param {Object} debris A map of properties describing the debris at the base of the tornado.
  * @param {Object} spine A map of properties describing the tornado's spine.
  * @param {Object} shell A map of properties describing the tornado's shell (funnel).
  * @constructor
  */
-function Vortex(base, storm, spine, shell) {
+function Runner(base, debris, spine, shell) {
   this.base = base;
-  this.storm = storm;
+  this.debris = debris;
   this.spine = spine;
   this.shell = shell;
 }
 
 /**
  * Holds a Perlin noise value.
- * @type {Number}
- * @memberof Vortex
+ * @type {number}
+ * @memberof Runner
  */
-Vortex.noise = 0;
+Runner.noise = 0;
 
 /**
- * Initializes an instance of Vortex.
+ * Initializes an instance of Runner.
  * @param {Object} [opt_options=] A map of initial world properties.
  * @param {Object} [opt_options.el = document.body] World's DOM object.
  * @param {number} [opt_options.width = 800] World width in pixels.
@@ -4940,9 +5027,9 @@ Vortex.noise = 0;
  * @param {number} [opt_options.borderWidth = 1] World border widthin pixels.
  * @param {string} [opt_options.borderStyle = 'solid'] World border style.
  * @param {Object} [opt_options.borderColor = 0, 0, 0] World border color.
- * @memberof Vortex
+ * @memberof Runner
  */
-Vortex.prototype.init = function(opt_options) {
+Runner.prototype.init = function(opt_options) {
 
   var options = opt_options || {};
 
@@ -4959,10 +5046,10 @@ Vortex.prototype.init = function(opt_options) {
 /**
  * Sets up the world and items.
  * @param {Object} options World options.
- * @memberof Vortex
+ * @memberof Runner
  * @private
  */
-Vortex.prototype._setupCallback = function(options) {
+Runner.prototype._setupCallback = function(options) {
 
   var world = Burner.System.add('World', {
     el: options.el || document.body,
@@ -4980,11 +5067,11 @@ Vortex.prototype._setupCallback = function(options) {
   this.base.configure(world);
   var myBase = Burner.System.add('Oscillator', this.base);
 
-  // STORM
-  this.storm.configure({
+  // DEBRIS
+  this.debris.configure({
     parent: myBase
   });
-  Burner.System.add('Mover', this.storm);
+  Burner.System.add('Mover', this.debris);
 
   // SPINE
   for (var i = 0, max = Math.floor(world.height / this.spine.density); i < max; i++) {
@@ -5070,220 +5157,75 @@ Vortex.prototype._setupCallback = function(options) {
 
 /**
  * Called at the end of the joints' step function.
- * @memberof Vortex
+ * @memberof Runner
  * @private
  */
-Vortex.prototype._jointAfterStep = function() {
-  var offset = this.index * this.offsetFromCenter * Vortex.noise;
+Runner.prototype._jointAfterStep = function() {
+  var offset = this.index * this.offsetFromCenter * Runner.noise;
   this.location.x = this.location.x + (offset);
 };
 
 /**
  * Called at the end of each animation frame.
- * @memberof Vortex
+ * @memberof Runner
  * @private
  */
-Vortex.prototype._getNoise = function() {
-  Vortex.noise = SimplexNoise.noise(Burner.System.clock * 0.0001, 0);
+Runner.prototype._getNoise = function() {
+  Runner.noise = SimplexNoise.noise(Burner.System.clock * 0.0001, 0);
 };
 
-module.exports = Vortex;
+module.exports = Runner;
 
-},{"./easing":36,"./items/mover":38,"./items/oscillator":39,"./items/particle":40,"./mask":42,"burner":28,"quietriot":33}],49:[function(_dereq_,module,exports){
-var BitShadowMachine = _dereq_('bitshadowmachine');
-var Mover = _dereq_('bitshadowitems').Mover;
-var Oscillator = _dereq_('bitshadowitems').Oscillator;
-var Particle = _dereq_('bitshadowitems').Particle;
-var Utils = _dereq_('burner').Utils;
-var Vector = _dereq_('burner').Vector;
-var SimplexNoise = _dereq_('quietriot');
-var Easing = _dereq_('./easing');
-var Mask = _dereq_('./mask');
-
+},{"./easing":40,"./items/mover":42,"./items/oscillator":43,"./items/particle":44,"./mask":46,"burner":28,"quietriot":33}],48:[function(_dereq_,module,exports){
 /**
- * Creates a new VortexBit.
- * @param {Object} base A map of properties describing the base of the tornado.
- * @param {Object} storm A map of properties describing the storm at the base of the tornado.
- * @param {Object} spine A map of properties describing the tornado's spine.
- * @param {Object} shell A map of properties describing the tornado's shell (funnel).
+ * Creates a new Shell.
+ *
+ * @param {Object} [opt_options=] A map of initial properties.
+ * @param {number} [opt_options.minWidth = 5] Minium width of the shell base.
+ * @param {number} [opt_options.opacity = 0] shell opacity.
+ * @param {number} [opt_options.blur = 350] shell blur. Recommended values bw 300 - 400.
+ * @param {number} [opt_options.spread = 250] shell spread. Recommended values bw 200 - 300.
+ * @param {string} [opt_options.easing = 'easeInExpo'] An easing function to determine shell shape along the spine. See Easing docs for possible values.
+ * @param {number} [opt_options.colorMin = 50] Minimum color. Valid values bw 0 - 255.
+ * @param {number} [opt_options.colorMax = 255] Maximum color. Valid values bw 0 - 255.
  * @constructor
  */
-function VortexBit(base, storm, spine, shell) {
-  this.base = base;
-  this.storm = storm;
-  this.spine = spine;
-  this.shell = shell;
-}
-
-/**
- * Holds a Perlin noise value.
- * @type {Number}
- * @memberof VortexBit
- */
-VortexBit.noise = 0;
-
-/**
- * Initializes an instance of VortexBit.
- * @param {Object} [opt_options=] A map of initial world properties.
- * @param {Object} [opt_options.el = document.body] World's DOM object.
- * @param {number} [opt_options.width = 800] World width in pixels.
- * @param {number} [opt_options.height = 600] World height in pixels.
- * @param {number} [opt_options.borderWidth = 1] World border widthin pixels.
- * @param {string} [opt_options.borderStyle = 'solid'] World border style.
- * @param {Object} [opt_options.borderColor = 0, 0, 0] World border color.
- * @memberof VortexBit
- */
-VortexBit.prototype.init = function(opt_options) {
+function Shell(opt_options) {
 
   var options = opt_options || {};
 
-  BitShadowMachine.System.Classes = {
-    Mover: Mover,
-    Oscillator: Oscillator,
-    Particle: Particle
-  };
-  BitShadowMachine.System.setup(this._setupCallback.bind(this, options));
-  BitShadowMachine.System.clock = 10000; // advance the clock so we start deeper in the noise space
-  BitShadowMachine.System.loop(this._getNoise.bind(this));
-};
+  this.minWidth = typeof options.minWidth !== 'undefined' ? options.minWidth : 5;
+  this.opacity = typeof options.opacity !== 'undefined' ? options.opacity : 0.75;
+  this.blur = typeof options.blur !== 'undefined' ? options.blur : 350;
+  this.spread = typeof options.spread !== 'undefined' ? options.spread : 250;
+  this.easing = options.easing || 'easeInExpo';
+  this.colorMin = typeof options.colorMin !== 'undefined' ? options.colorMin : 50;
+  this.colorMax = typeof options.colorMax !== 'undefined' ? options.colorMax : 255;
+}
 
+module.exports = Shell;
+
+},{}],49:[function(_dereq_,module,exports){
 /**
- * Sets up the world and items.
- * @param {Object} options World options.
- * @memberof VortexBit
- * @private
+ * Creates a new Spine.
+ *
+ * @param {Object} [opt_options=] A map of initial joint properties.
+ * @param {number} [opt_options.density = 25] Determines number of joints in the spine. Lower values = more joints.
+ * @param {number} [opt_options.opacity = 0] Opacity.
+ * @param {string} [opt_options.easing = 'easeInCirc'] An easing function to determine joint distribution along the spine. See Easing docs for possible values.
+ * @constructor
  */
-VortexBit.prototype._setupCallback = function(options) {
+function Spine(opt_options) {
 
-  var rand = Utils.getRandomNumber,
-      map = Utils.map;
+  var options = opt_options || {};
 
-  var world = BitShadowMachine.System.add('World', {
-    el: options.el || document.body,
-    resolution: options.resolution || 4,
-    color: options.color || [40, 40, 40],
-    width: options.width || 800,
-    height: options.height || 600,
-    gravity: new Vector(),
-    c: 0
-  });
+  this.density = options.density || 25;
+  this.opacity = options.opacity || 0;
+  this.easing = options.easing || 'easeInCirc';
+}
 
-  // BASE
-  this.base.configure(world);
-  var myBase = BitShadowMachine.System.add('Oscillator', this.base);
+module.exports = Spine;
 
-  // STORM
-  this.storm.configure({
-    parent: myBase
-  });
-  BitShadowMachine.System.add('Mover', this.storm);
-
-  // SPINE
-  for (var i = 0, max = Math.floor(world.height / this.spine.density); i < max; i++) {
-
-    var ease = Easing[this.spine.easing].call(null, i, 0, 1, max - 1);
-
-    // joints
-    var joint = BitShadowMachine.System.add('Mover', {
-      parent: myBase,
-      offsetDistance: ease * world.height,
-      offsetAngle: 270,
-      opacity: this.spine.opacity,
-      afterStep: this._jointAfterStep
-    });
-    joint.index = i;
-
-    // use Perlin noise to generate the parent node's offset from the funnel's y-axis
-    // use easing so the effect is amplified
-    joint.offsetFromCenter = Easing.easeInSine(i, 0, 1, max - 1) *
-        SimplexNoise.noise(i * 0.1, 0) * 10;
-
-    // pillows
-    var easeShellShape = Easing[this.shell.easing].call(null, i, 0, 1, max - 1);
-
-    var colorNoise = Math.floor(Utils.map(SimplexNoise.noise(i * 0.05, 0),
-        -1, 1, this.shell.colorMin, this.shell.colorMax));
-
-    for (var j = 0; j < (i + 1) * 4; j++) {
-
-      var scale = (easeShellShape * this.shell.maxScale) + this.shell.minScale;
-      BitShadowMachine.System.add('Oscillator', {
-        perlin: false,
-        parent: joint,
-        blur: easeShellShape,
-        color: [colorNoise, colorNoise, colorNoise],
-        opacity: Utils.map(scale, this.shell.minScale, this.shell.maxScale, 0.3, 0.1),
-        scale: scale,
-        amplitude: new Vector(Utils.map(easeShellShape, 0, 1, 1, rand(50, 100)),
-            Utils.map(easeShellShape, 0, 1, 1, rand(10, 64))),
-        acceleration: new BitShadowMachine.Vector(2 / (i + 1), 0.05),
-        aVelocity: new BitShadowMachine.Vector(rand(0, 40), rand(0, 40))
-      });
-    }
-  }
-
-  // MASKS
-  /*var maskWidth = (document.body.scrollWidth - world.width) / 2,
-    maskHeight = (document.body.scrollHeight - world.height) / 2;
-
-  var maskTop = new Mask();
-  maskTop.configure({
-    location: new Vector(world.width/2, -1 - maskHeight / 2),
-    world: world,
-    width: world.width + 10,
-    height: maskHeight
-  });
-  BitShadowMachine.System.add('Mover', maskTop);
-
-  var maskBottom = new Mask();
-  maskBottom.configure({
-    location: new BitShadowMachine.Vector(world.width/2, world.height + 1 + maskHeight / 2),
-    world: world,
-    width: world.width + 10,
-    height: maskHeight
-  });
-  BitShadowMachine.System.add('Mover', maskBottom);
-
-  var maskLeft = new Mask();
-  maskLeft.configure({
-    location: new BitShadowMachine.Vector(-1 - maskWidth / 2, world.height / 2),
-    world: world,
-    width: maskWidth,
-    height: document.body.scrollHeight
-  });
-  BitShadowMachine.System.add('Mover', maskLeft);
-
-  var maskRight = new Mask();
-  maskRight.configure({
-    location: new BitShadowMachine.Vector(world.width + 1 + maskWidth / 2, world.height / 2),
-    world: world,
-    width: maskWidth,
-    height: document.body.scrollHeight
-  });
-  BitShadowMachine.System.add('Mover', maskRight);*/
-};
-
-/**
- * Called at the end of the joints' step function.
- * @memberof VortexBit
- * @private
- */
-VortexBit.prototype._jointAfterStep = function() {
-  var offset = this.index * this.offsetFromCenter * VortexBit.noise;
-  this.location.x = this.location.x + offset;
-};
-
-/**
- * Called at the end of each animation frame.
- * @memberof VortexBit
- * @private
- */
-VortexBit.prototype._getNoise = function() {
-  VortexBit.noise = SimplexNoise.noise(BitShadowMachine.System.clock * 0.0001, 0);
-};
-
-module.exports = VortexBit;
-
-},{"./easing":36,"./mask":42,"bitshadowitems":15,"bitshadowmachine":23,"burner":28,"quietriot":33}]},{},[41])
-(41)
+},{}]},{},[45])
+(45)
 });

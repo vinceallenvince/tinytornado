@@ -4,7 +4,7 @@ var Utils = require('burner').Utils;
 var Vector = require('burner').Vector;
 
 /**
- * Creates a new Storm.
+ * Creates a new Debris.
  * @param {Object} [opt_options=] A map of initial properties.
  * @param {number} [opt_options.sizeMin = 1] Minimum particle size.
  * @param {number} [opt_options.sizeMax = 3] Maximum particle size.
@@ -18,7 +18,7 @@ var Vector = require('burner').Vector;
  * @param {number} [opt_options.colorMax = 200] Maximum color. Valid values bw 0 - 255.
  * @constructor
  */
-function Storm(opt_options) {
+function Debris(opt_options) {
 
   var options = opt_options || {};
 
@@ -53,9 +53,9 @@ function Storm(opt_options) {
 /**
  * Called before each step function.
  * @private
- * @memberOf Storm
+ * @memberOf Debris
  */
-Storm.prototype._beforeStep = function() {
+Debris.prototype._beforeStep = function() {
 
   if ((System.clock % 3) === 0) {
 
@@ -88,14 +88,14 @@ Storm.prototype._beforeStep = function() {
 };
 
 /**
- * Configures an instance of Storm.
+ * Configures an instance of Debris.
  * @param {Object} [opt_options=] A map of options.
- * @param {Object} [opt_options.parent = null] The storm's parent.
- * @memberOf Storm
+ * @param {Object} [opt_options.parent = null] The Debris' parent.
+ * @memberOf Debris
  */
-Storm.prototype.configure = function(opt_options) {
+Debris.prototype.configure = function(opt_options) {
   var options = opt_options || {};
   this.parent = options.parent || null;
 };
 
-module.exports = Storm;
+module.exports = Debris;

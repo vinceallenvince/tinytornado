@@ -6,24 +6,31 @@
   <meta name="description" content="A DOM-based rendering engine." />
   <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <meta name='apple-mobile-web-app-capable' content='yes' />
-  <title>Torndao</title>
-  <link rel="stylesheet" href="css/flora.min.css" type="text/css" charset="utf-8" />
+  <title>Tiny Tornado | Vortex</title>
+  <link href="css/bitshadowmachine.min.css" type="text/css" charset="utf-8" rel="stylesheet" />
+  <style type="text/css">
+    html, body {
+      background-color: #000;
+    }
+  </style>
   <script src="scripts/tinytornado.js" type="text/javascript" charset="utf-8"></script>
   </head>
   <body>
     <div id="worldA"></div>
     <script type="text/javascript" charset="utf-8">
 
-      var base = new TinyTornado.Funnel.Base({
-        opacity: 0
+      var base = new TinyTornado.Vortex.Base({
+        opacity: 0,
+        perlinSpeed: 0.001
       });
-      var storm = new TinyTornado.Funnel.Storm();
-      var spine = new TinyTornado.Funnel.Spine({
-        opacity: 0
+      var debris = new TinyTornado.Vortex.DebrisBit();
+      var spine = new TinyTornado.Vortex.Spine({
+        opacity: 0,
+        density: 10
       });
-      var shell = new TinyTornado.Funnel.Shell();
+      var shell = new TinyTornado.Vortex.ShellBit();
 
-      var vortex = new TinyTornado.Funnel.Vortex(base, storm, spine, shell);
+      var vortex = new TinyTornado.Vortex.RunnerBit(base, debris, spine, shell);
       vortex.init({
         el: document.getElementById('worldA')
       });

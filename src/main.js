@@ -1,29 +1,16 @@
-/*module.exports = {
-  Base: require('./base'),
-  Storm: require('./storm'),
-  //StormBit: require('./stormbit'),
-  Spine: require('./spine'),
-  Shell: require('./shell'),
-  //ShellBit: require('./shellbit'),
-  Vortex: require('./vortex'),
-  //VortexBit: require('./vortexbit')
-};*/
-
-// TODO:
-
 module.exports = {
   Funnel: {
     Base: require('./base'),
-    Storm: require('./storm'),
+    Debris: require('./debris'),
     Spine: require('./spine'),
     Shell: require('./shell'),
-    Vortex: require('./vortex')
+    Runner: require('./runner')
   },
   Vortex: {
     Base: require('./base'),
-    StormBit: require('./stormbit'),
+    DebrisBit: require('./bitshadow/debrisbit'),
     Spine: require('./spine'),
-    ShellBit: require('./shellbit'),
-    VortexBit: require('./vortexbit')
+    ShellBit: require('./bitshadow/shellbit'),
+    RunnerBit: require('./bitshadow/runnerbit')
   }
 };

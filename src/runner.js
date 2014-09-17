@@ -9,29 +9,29 @@ var Easing = require('./easing');
 var Mask = require('./mask');
 
 /**
- * Creates a new Vortex.
+ * Creates a new Runner.
  * @param {Object} base A map of properties describing the base of the tornado.
- * @param {Object} storm A map of properties describing the storm at the base of the tornado.
+ * @param {Object} debris A map of properties describing the debris at the base of the tornado.
  * @param {Object} spine A map of properties describing the tornado's spine.
  * @param {Object} shell A map of properties describing the tornado's shell (funnel).
  * @constructor
  */
-function Vortex(base, storm, spine, shell) {
+function Runner(base, debris, spine, shell) {
   this.base = base;
-  this.storm = storm;
+  this.debris = debris;
   this.spine = spine;
   this.shell = shell;
 }
 
 /**
  * Holds a Perlin noise value.
- * @type {Number}
- * @memberof Vortex
+ * @type {number}
+ * @memberof Runner
  */
-Vortex.noise = 0;
+Runner.noise = 0;
 
 /**
- * Initializes an instance of Vortex.
+ * Initializes an instance of Runner.
  * @param {Object} [opt_options=] A map of initial world properties.
  * @param {Object} [opt_options.el = document.body] World's DOM object.
  * @param {number} [opt_options.width = 800] World width in pixels.
@@ -39,9 +39,9 @@ Vortex.noise = 0;
  * @param {number} [opt_options.borderWidth = 1] World border widthin pixels.
  * @param {string} [opt_options.borderStyle = 'solid'] World border style.
  * @param {Object} [opt_options.borderColor = 0, 0, 0] World border color.
- * @memberof Vortex
+ * @memberof Runner
  */
-Vortex.prototype.init = function(opt_options) {
+Runner.prototype.init = function(opt_options) {
 
   var options = opt_options || {};
 
@@ -58,10 +58,10 @@ Vortex.prototype.init = function(opt_options) {
 /**
  * Sets up the world and items.
  * @param {Object} options World options.
- * @memberof Vortex
+ * @memberof Runner
  * @private
  */
-Vortex.prototype._setupCallback = function(options) {
+Runner.prototype._setupCallback = function(options) {
 
   var world = Burner.System.add('World', {
     el: options.el || document.body,
@@ -79,11 +79,11 @@ Vortex.prototype._setupCallback = function(options) {
   this.base.configure(world);
   var myBase = Burner.System.add('Oscillator', this.base);
 
-  // STORM
-  this.storm.configure({
+  // DEBRIS
+  this.debris.configure({
     parent: myBase
   });
-  Burner.System.add('Mover', this.storm);
+  Burner.System.add('Mover', this.debris);
 
   // SPINE
   for (var i = 0, max = Math.floor(world.height / this.spine.density); i < max; i++) {
@@ -169,21 +169,21 @@ Vortex.prototype._setupCallback = function(options) {
 
 /**
  * Called at the end of the joints' step function.
- * @memberof Vortex
+ * @memberof Runner
  * @private
  */
-Vortex.prototype._jointAfterStep = function() {
-  var offset = this.index * this.offsetFromCenter * Vortex.noise;
+Runner.prototype._jointAfterStep = function() {
+  var offset = this.index * this.offsetFromCenter * Runner.noise;
   this.location.x = this.location.x + (offset);
 };
 
 /**
  * Called at the end of each animation frame.
- * @memberof Vortex
+ * @memberof Runner
  * @private
  */
-Vortex.prototype._getNoise = function() {
-  Vortex.noise = SimplexNoise.noise(Burner.System.clock * 0.0001, 0);
+Runner.prototype._getNoise = function() {
+  Runner.noise = SimplexNoise.noise(Burner.System.clock * 0.0001, 0);
 };
 
-module.exports = Vortex;
+module.exports = Runner;

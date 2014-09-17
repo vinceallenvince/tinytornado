@@ -6,26 +6,24 @@
   <meta name="description" content="A DOM-based rendering engine." />
   <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <meta name='apple-mobile-web-app-capable' content='yes' />
-  <title>Torndao</title>
-  <link href="css/bitshadowmachine.min.css" type="text/css" charset="utf-8" rel="stylesheet" />
+  <title>Tiny Tornado | Funnel</title>
+  <link href="css/flora.min.css" type="text/css" charset="utf-8" rel="stylesheet" />
   <script src="scripts/tinytornado.js" type="text/javascript" charset="utf-8"></script>
   </head>
   <body>
     <div id="worldA"></div>
     <script type="text/javascript" charset="utf-8">
 
-      var base = new TinyTornado.Vortex.Base({
-        opacity: 0,
-        perlinSpeed: 0.001
+      var base = new TinyTornado.Funnel.Base({
+        opacity: 0
       });
-      var storm = new TinyTornado.Vortex.StormBit();
-      var spine = new TinyTornado.Vortex.Spine({
-        opacity: 0,
-        density: 10
+      var debris = new TinyTornado.Funnel.Debris();
+      var spine = new TinyTornado.Funnel.Spine({
+        opacity: 0
       });
-      var shell = new TinyTornado.Vortex.ShellBit();
+      var shell = new TinyTornado.Funnel.Shell();
 
-      var vortex = new TinyTornado.Vortex.VortexBit(base, storm, spine, shell);
+      var vortex = new TinyTornado.Funnel.Runner(base, debris, spine, shell);
       vortex.init({
         el: document.getElementById('worldA')
       });
