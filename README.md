@@ -119,9 +119,141 @@ To create a Tornado's low rumble, use [SoundBed](https://github.com/vinceallenvi
 ```
 Adjust the settings to your liking.
 
+##Configure
+
+Both funnel and vortex components have options you can adjust to configure your tornado.
+
+####Funnel.Base
+
+ *    *width* (default = 10)
+
+      The base width. Only useful when the base opacity > 0.
+
+ *    *height* (default = 10)
+
+      The base height. Only useful when the base opacity > 0.
+
+ *    *color* (default = 0)
+
+      Color. TinyTornadoes are monochromatic. This value is used for red, green and blue.
+
+ *    *perlin* (default = true)
+
+      Set to true to distort the base's oscillation via perlin noise.
+
+ *    *perlinSpeed*
+
+      If perlin = true, sets the speed through the perlin noise space.
+
+ *    *perlinTime*
+
+      If perlin = true, sets the initial location in the perlin noise space.
+
+ *    *opacity* (default = 0)
+
+      The base opacity. Typically you want to leave this at 0 for an invisible base.
+
+####Funnel.Debris
+
+ *    *sizeMin* (default = 1)
+
+      Minimum particle size.
+
+ *    *sizeMax* (default = 3)
+
+      Maximum particle size.
+
+ *    *speedMin* (default = 1)
+
+      Minimum particle speed.
+
+ *    *speedMax* (default = 20)
+
+      Maximum particle speed.
+
+ *    *opacityMin* (default = 0.1)
+
+      Minimum particle opacity.
+
+ *    *opacityMax* (default = 0.2)
+
+      Maximum particle opacity.
+
+ *    *lifespanMin* (default = 70)
+
+      Minimum particle lifespan.
+
+ *    *lifespanMax* (default = 120)
+
+      Maximum particle lifespan.
+
+ *    *colorMin* (default = 100)
+
+      Minimum particle color. Debris is monochromatic. This value is used for red, green and blue.
+
+ *    *colorMax* (default = 200)
+
+      Maximum particle color. This value is used for red, green and blue.
+
+####Funnel.Spine
+
+ *    *density* (default = 25)
+
+      Determines number of joints in the spine. Lower values = more joints.
+
+ *    *opacity* (default = 0)
+
+      Opacity. Typically set to 0.
+
+ *    *easing* (default = 'easeInCirc')
+
+      Determines joint distribution. See src/easing.js for more options.
+
+ *    *offsetFromAxis* (default = true)
+
+      Set to false to prevent spine curvature.
+
+####Funnel.Shell
+
+ *    *itemWidth* (default = 0)
+
+      The element width. Typically set to 0.
+
+ *    *itemHeight* (default = 0)
+
+      The element height. Typically set to 0.
+
+ *    *minFunnelWidth* (default = 5)
+
+      Minium width of the shell base.
+
+ *    *opacity* (default = 0)
+
+      The element opacity. Typically set to 0.
+
+ *    *blur* (default = 350)
+
+      Blur. Recommended values bw 300 - 400.
+
+ *    *spread* (default = 250)
+
+      Spread. Recommended values bw 200 - 300.
+
+ *    *easing* (default = 'easeInExpo')
+
+      Determines shell shape. See src/easing.js for more options.
+
+ *    *colorMin* (default = 50)
+
+      Minimum color. Valid values bw 0 - 255. Shell is monochromatic. This value is used for red, green and blue.
+
+ *    *colorMin* (default = 255)
+
+      Maximum color. Valid values bw 0 - 255. Shell is monochromatic. This value is used for red, green and blue.
+
 ##Docs
 
-There's a whole slew of options your can pass to the difference components. To learn more, please review [the docs](http://vinceallenvince.github.io/tinytornado/doc/).
+To learn more, please review [the docs](http://vinceallenvince.github.io/tinytornado/doc/).
 
 
 ##Building this project
