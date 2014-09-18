@@ -11,8 +11,8 @@ var Vector = require('burner').Vector;
  * @param {boolean} [opt_options.perlin = true] Set to true to move the base via perlin noise.
  * @param {number} [opt_options.perlinSpeed = 0.0001] Perlin speed.
  * @param {number} [opt_options.perlinTime = 100] Initial perlin time.
- * @param {Object} [opt_options.initialLocation = bottom middle of the world] Initial base location.
- * @param {Object} [opt_options.amplitude = world.width / 4, 0] Limit of the base location.
+ * @param {Object} [opt_options.initialLocation = null] Initial base location.
+ * @param {Object} [opt_options.amplitude = null] Limit of the base location.
  * @param {number} [opt_options.opacity = 0] Opacity.
  * @constructor
  */
@@ -29,7 +29,6 @@ function Base(opt_options) {
   this.initialLocation = options.initialLocation || null;
   this.amplitude = options.amplitude || null;
   this.opacity = options.opacity || 0;
-  this.particleOptions = options.particleOptions || {};
 }
 
 /**

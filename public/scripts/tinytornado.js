@@ -3515,8 +3515,8 @@ var Vector = require('burner').Vector;
  * @param {boolean} [opt_options.perlin = true] Set to true to move the base via perlin noise.
  * @param {number} [opt_options.perlinSpeed = 0.0001] Perlin speed.
  * @param {number} [opt_options.perlinTime = 100] Initial perlin time.
- * @param {Object} [opt_options.initialLocation = bottom middle of the world] Initial base location.
- * @param {Object} [opt_options.amplitude = world.width / 4, 0] Limit of the base location.
+ * @param {Object} [opt_options.initialLocation = null] Initial base location.
+ * @param {Object} [opt_options.amplitude = null] Limit of the base location.
  * @param {number} [opt_options.opacity = 0] Opacity.
  * @constructor
  */
@@ -3533,7 +3533,6 @@ function Base(opt_options) {
   this.initialLocation = options.initialLocation || null;
   this.amplitude = options.amplitude || null;
   this.opacity = options.opacity || 0;
-  this.particleOptions = options.particleOptions || {};
 }
 
 /**
@@ -3567,6 +3566,8 @@ var Vector = require('burner').Vector;
  * @param {number} [opt_options.lifespanMax = 120] Maximum lifespan.
  * @param {number} [opt_options.colorMin = 100] Minimum color. Valid values bw 0 - 255.
  * @param {number} [opt_options.colorMax = 200] Maximum color. Valid values bw 0 - 255.
+ * @param {number} [opt_options.rate = 1] Particle emission rate.
+ * @param {number} [opt_options.fade = false] Set to true for particles to fade in proportion to their lifespan.
  * @constructor
  */
 function DebrisBit(opt_options) {
@@ -3610,7 +3611,7 @@ function DebrisBit(opt_options) {
  */
 DebrisBit.prototype._beforeStep = function() {
 
-  for (var i = 0; i < 1; i++) {
+  for (var i = 0; i < this.rate; i++) {
 
     var accel = new Vector(1, 1);
     accel.normalize();
@@ -3808,12 +3809,12 @@ module.exports = RunnerBit;
  * Creates a new Shell.
  *
  * @param {Object} [opt_options=] A map of initial properties.
- * @param {number} [opt_options.minScale = 0.3] Minium width of the shell base.
- * @param {number} [opt_options.opacity = 0] shell opacity.
- * @param {number} [opt_options.blur = 350] shell blur. Recommended values bw 300 - 400.
- * @param {number} [opt_options.spread = 250] shell spread. Recommended values bw 200 - 300.
+ * @param {number} [opt_options.minScale = 0.1] Minimum scale of a shell item.
+ * @param {number} [opt_options.maxScale = 8] Maximum scale of a shell item.
+ * @param {number} [opt_options.opacity = 0.75] shell opacity.
+ * @param {number} [opt_options.blur = 30] shell blur. Recommended values bw 300 - 400.
  * @param {string} [opt_options.easing = 'easeInExpo'] An easing function to determine shell shape along the spine. See Easing docs for possible values.
- * @param {number} [opt_options.colorMin = 50] Minimum color. Valid values bw 0 - 255.
+ * @param {number} [opt_options.colorMin = 100] Minimum color. Valid values bw 0 - 255.
  * @param {number} [opt_options.colorMax = 255] Maximum color. Valid values bw 0 - 255.
  * @constructor
  */

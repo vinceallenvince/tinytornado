@@ -16,6 +16,8 @@ var Vector = require('burner').Vector;
  * @param {number} [opt_options.lifespanMax = 120] Maximum lifespan.
  * @param {number} [opt_options.colorMin = 100] Minimum color. Valid values bw 0 - 255.
  * @param {number} [opt_options.colorMax = 200] Maximum color. Valid values bw 0 - 255.
+ * @param {number} [opt_options.rate = 1] Particle emission rate.
+ * @param {number} [opt_options.fade = false] Set to true for particles to fade in proportion to their lifespan.
  * @constructor
  */
 function DebrisBit(opt_options) {
@@ -59,7 +61,7 @@ function DebrisBit(opt_options) {
  */
 DebrisBit.prototype._beforeStep = function() {
 
-  for (var i = 0; i < 1; i++) {
+  for (var i = 0; i < this.rate; i++) {
 
     var accel = new Vector(1, 1);
     accel.normalize();
