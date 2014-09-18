@@ -5,3 +5,31 @@ before_install:
 - export DISPLAY=:99.0
 - sh -e /etc/init.d/xvfb start
 - npm install -g grunt-cli
+after_success: grunt release
+before_deploy: echo 'ready to deploy?'
+after_deploy:
+- echo 'done!'
+- ./deploy-gh-pages.sh
+deploy:
+- provider: releases
+  api_key:
+    secure: S0aBlm48YTbT0PXVStAxP33vs+/sczKVVCpr3fl4l2OggxRBMMt42QgSS2vTVdDNChu4qupmeaDY72r4RMOnnnFVgAFrDkuBYTgTp9TrVNth4z/EIqXP/mqVA29VvG3vp0fz+xhcSYxC+cGFYek8n9D/DdJBen0eS8E1PvdBF0w=
+  file:
+  - release/tinytornado.min.js
+  - public/css/funnel.min.css
+  - public/css/vortex.min.css
+  on:
+    repo: vinceallenvince/tinytornado
+    tags: true
+    all_branches: true
+- provider: npm
+  email: vince@vinceallen.com
+  api_key:
+    secure: HIZe9ZS6H64IUgw5UmR9asfQ0b65UWk3lv6+/bJzyJNPQbzhRW7/qxbwEtKIlGBghEc1ESy7Agyx7efgfCNF7lOVZoDeVw6zrymbGK2RtXWM0LtpkiFtUIaU4AlaPyT7lt2TFdUtDXCYIIpUXBRfhmOhUcMPwX8lPvh8boOcibQ=
+  on:
+    repo: vinceallenvince/tinytornado
+    tags: true
+    all_branches: true
+env:
+  global:
+    secure: Zalk1BVEQN5D/AZN1ndlVy3htVn1wTY4Ebd5tewGF3vsq5ucz4UK34NjBm045gAuTZ1xxdnLOXVzssqXReiH7vbP6deh9iz66AhxHz1SinZZNH/MJtvMDmXuse+LHCTFBGJjW73Xw8mFjNTyhJfnciawOU2zdtCoErudw7pTHxI=
