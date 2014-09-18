@@ -33,4 +33,4 @@ deploy:
 env:
   global:
   - GH_REF: github.com/vinceallenvince/tinytornado.git
-    secure: Zalk1BVEQN5D/AZN1ndlVy3htVn1wTY4Ebd5tewGF3vsq5ucz4UK34NjBm045gAuTZ1xxdnLOXVzssqXReiH7vbP6deh9iz66AhxHz1SinZZNH/MJtvMDmXuse+LHCTFBGJjW73Xw8mFjNTyhJfnciawOU2zdtCoErudw7pTHxI=
+  - secure: Zalk1BVEQN5D/AZN1ndlVy3htVn1wTY4Ebd5tewGF3vsq5ucz4UK34NjBm045gAuTZ1xxdnLOXVzssqXReiH7vbP6deh9iz66AhxHz1SinZZNH/MJtvMDmXuse+LHCTFBGJjW73Xw8mFjNTyhJfnciawOU2zdtCoErudw7pTHxI=
