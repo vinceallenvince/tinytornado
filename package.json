@@ -1,6 +1,6 @@
 {
   "name": "tinytornado",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "TinyTornado renders animated tornadoes in a web browser.",
   "keywords": "utilities",
   "main": "src/tinytornado.js",
