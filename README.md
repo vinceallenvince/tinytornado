@@ -2,7 +2,7 @@
 
 # tinytornado
 
-TinyTornado renders animated tornadoes in a web browser using JavaScript, CSS and the DOM. Note, while TinyTornado uses only basic browser elements (no Canvas, SVG, etc), the animation runs best in [Google Chrome](https://www.google.com/chrome/browser/).
+TinyTornado renders animated tornadoes in a web browser using JavaScript, CSS and the DOM. Note, while TinyTornado uses only basic HTML elements (no Canvas, SVG, etc), the animation runs best in [Google Chrome](https://www.google.com/chrome/browser/).
 
 ##Install
 
@@ -38,7 +38,7 @@ npm install tinytornado --save
 
 ##Usage
 
-TinyTornado uses four components to create a tornado, a base, debris, spine and shell. Simply create all four and pass them to the tornado's runner to start the animation.
+TinyTornado uses four components to create a tornado, a *base*, *debris*, *spine* and *shell*. Simply create all four and pass them to the tornado's runner to start the animation.
 
 Notice we're also defining a view for the tornado by passing a &lt;div&gt; to the Runner. The following code creates a funnel.
 
