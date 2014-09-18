@@ -2,7 +2,7 @@
 
 # tinytornado
 
-TinyTornado renders animated tornadoes in a web browser using JavaScript, CSS and the DOM. Note, while TinyTornado uses only basic HTML elements (no Canvas, SVG, etc), the animation runs best in [Google Chrome](https://www.google.com/chrome/browser/).
+TinyTornado renders animated tornadoes in a web browser using JavaScript, CSS and the DOM. It also makes use of both [FloraJS](http://github.com/vinceallenvince/FloraJS) and [Bit-Shadow Machine](http://github.com/vinceallenvince/Bit-Shadow-Machine).
 
 ##Install
 
@@ -62,6 +62,8 @@ Notice we're also defining a view for the tornado by passing a &lt;div&gt; to th
 </html>
 ```
 
+<img src='http://vinceallenvince.github.io/tinytornado/images/funnel.jpg' style='width: 800px;'>
+
 The following code creates a Vortex.
 
 ```
@@ -85,6 +87,37 @@ The following code creates a Vortex.
   </body>
 </html>
 ```
+<img src='http://vinceallenvince.github.io/tinytornado/images/vortex.jpg' style='width: 800px;'>
+
+##Audio
+
+To create a Tornado's low rumble, use [SoundBed](https://github.com/vinceallenvince/soundbed). Just reference the SoundBed library from your document and initialize the player.
+
+```
+...
+<script src="scripts/soundbed.min.js" type="text/javascript" charset="utf-8"></script>
+</head>
+  <body>
+    <script type="text/javascript" charset="utf-8">
+      var playerLow = new SoundBed.Player();
+      playerLow.init({
+        perlin: true,
+        reverb: 5,
+        oscAFreq: 60,
+        oscBFreq: 120,
+        oscARate: 0.1,
+        oscBRate: 0.12,
+        freqMin: 60,
+        freqMax: 120,
+        volumeMin: 0.5,
+        volumeMax: 1
+      });
+    </script>
+  </body>
+</html>
+
+```
+Adjust the settings to your liking.
 
 ##Docs
 
