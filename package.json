@@ -36,11 +36,11 @@
   },
   "license": "MIT",
   "dependencies": {
+    "bitshadowitems": "^0.1.x",
+    "bitshadowmachine": "^3.0.4",
+    "burner": "^3.1.6",
     "colorpalette": "^0.1.5",
     "florajs": "^3.1.1",
-    "burner": "^3.1.5",
-    "quietriot": "^0.1.2",
-    "bitshadowmachine": "^3.0.3",
-    "bitshadowitems": "^0.1.x"
+    "quietriot": "^0.1.2"
   }
 }

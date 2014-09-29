@@ -6,32 +6,24 @@
   <meta name="description" content="A DOM-based rendering engine." />
   <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <meta name='apple-mobile-web-app-capable' content='yes' />
-  <title>Tiny Tornado | Vortex</title>
-  <link href="css/vortex.min.css" type="text/css" charset="utf-8" rel="stylesheet" />
-  <style type="text/css">
-    html, body {
-      background-color: #000;
-    }
-  </style>
-  <script src="scripts/tinytornado.js" type="text/javascript" charset="utf-8"></script>
+  <title>Tiny Tornado | Funnel</title>
+  <link href="css/funnel.min.css" type="text/css" charset="utf-8" rel="stylesheet" />
+  <script src="scripts/tinytornado.min.js" type="text/javascript" charset="utf-8"></script>
   <script src="scripts/soundbed.min.js" type="text/javascript" charset="utf-8"></script>
   </head>
   <body>
     <div id="worldA"></div>
     <script type="text/javascript" charset="utf-8">
 
-      var base = new TinyTornado.Vortex.Base({
-        perlinSpeed: 0.002
-      });
-      var debris = new TinyTornado.Vortex.DebrisBit();
-      var spine = new TinyTornado.Vortex.Spine({
-        density: 10
-      });
-      var shell = new TinyTornado.Vortex.ShellBit();
+      var base = new TinyTornado.Funnel.Base();
+      var debris = new TinyTornado.Funnel.Debris();
+      var spine = new TinyTornado.Funnel.Spine();
+      var shell = new TinyTornado.Funnel.Shell();
 
-      var vortex = new TinyTornado.Vortex.RunnerBit(base, debris, spine, shell);
+      var vortex = new TinyTornado.Funnel.Runner(base, debris, spine, shell);
       vortex.init({
-        el: document.getElementById('worldA')
+        el: document.getElementById('worldA'),
+        radionado: true
       });
 
       var playerLow = new SoundBed.Player();
@@ -49,4 +41,4 @@
       });
     </script>
   </body>
-</html
+</html>

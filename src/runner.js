@@ -66,6 +66,8 @@ Runner.prototype.init = function(opt_options) {
  */
 Runner.prototype._setupCallback = function(options) {
 
+  var radionado = options.radionado;
+
   var world = Burner.System.add('World', {
     el: options.el || document.body,
     color: options.color || [40, 40, 40],
@@ -119,62 +121,49 @@ Runner.prototype._setupCallback = function(options) {
         var colorNoise = Math.floor(Utils.map(SimplexNoise.noise(i * 0.05, 0),
             -1, 1, this.shell.colorMin, this.shell.colorMax));
 
-        Burner.System.add('Oscillator', {
-          width: this.shell.width,
-          height: this.shell.height,
-          parent: joint,
-          opacity: this.shell.opacity,
-          color: [colorNoise, colorNoise, colorNoise],
-          boxShadowBlur: (easeShellShape * this.shell.blur) + this.shell.minFunnelWidth,
-          boxShadowSpread: (easeShellShape * this.shell.spread) + this.shell.minFunnelWidth,
-          boxShadowColor: [colorNoise, colorNoise, colorNoise],
-          perlin: false,
-          amplitude: new Vector((2 - easeShellShape) * 1, 0),
-          acceleration: new Vector(1 / (i + 1), 0)
-        });
+        if (radionado) {
+          for (var j = 0; j < (i + 1) * 1; j++) {
+
+            Burner.Item.baseElement = 'input';
+            Burner.Item.baseElementAttributes = {
+              type: 'radio'
+            };
+
+            var rand = Utils.getRandomNumber;
+            var osc = Burner.System.add('Oscillator', {
+              perlin: false,
+              parent: joint,
+              blur: easeShellShape,
+              color: [colorNoise, colorNoise, colorNoise],
+              opacity: 1,
+              scale: easeShellShape * 1,
+              amplitude: new Vector(Utils.map(easeShellShape, 0, 1, 1, rand(50, 200)),
+                  Utils.map(easeShellShape, 0, 1, 1, rand(10, 64))),
+              acceleration: new Burner.Vector(2 / (i + 1), 0.05),
+              aVelocity: new Burner.Vector(rand(0, 40), rand(0, 40))
+            });
+            if (rand(1, 2) === 1) {
+              osc.el.checked = 'checked';
+            }
+          }
+        } else {
+          Burner.System.add('Oscillator', {
+            width: this.shell.width,
+            height: this.shell.height,
+            parent: joint,
+            opacity: this.shell.opacity,
+            color: [colorNoise, colorNoise, colorNoise],
+            boxShadowBlur: (easeShellShape * this.shell.blur) + this.shell.minFunnelWidth,
+            boxShadowSpread: (easeShellShape * this.shell.spread) + this.shell.minFunnelWidth,
+            boxShadowColor: [colorNoise, colorNoise, colorNoise],
+            perlin: false,
+            amplitude: new Vector((2 - easeShellShape) * 1, 0),
+            acceleration: new Vector(1 / (i + 1), 0)
+          });
+        }
       }
     }
   }
-
-  // MASKS
-  var maskWidth = (document.body.scrollWidth - world.width) / 2,
-    maskHeight = (document.body.scrollHeight - world.height) / 2;
-
-  var maskTop = new Mask();
-  maskTop.configure({
-    location: new Vector(world.width/2, -1 - maskHeight / 2),
-    world: world,
-    width: world.width + 10,
-    height: maskHeight
-  });
-  Burner.System.add('Mover', maskTop);
-
-  var maskBottom = new Mask();
-  maskBottom.configure({
-    location: new Burner.Vector(world.width/2, world.height + 1 + maskHeight / 2),
-    world: world,
-    width: world.width + 10,
-    height: maskHeight
-  });
-  Burner.System.add('Mover', maskBottom);
-
-  var maskLeft = new Mask();
-  maskLeft.configure({
-    location: new Burner.Vector(-1 - maskWidth / 2, world.height / 2),
-    world: world,
-    width: maskWidth,
-    height: document.body.scrollHeight
-  });
-  Burner.System.add('Mover', maskLeft);
-
-  var maskRight = new Mask();
-  maskRight.configure({
-    location: new Burner.Vector(world.width + 1 + maskWidth / 2, world.height / 2),
-    world: world,
-    width: maskWidth,
-    height: document.body.scrollHeight
-  });
-  Burner.System.add('Mover', maskRight);
 };
 
 /**
