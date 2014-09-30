@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title></title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <!--[if lt IE 9]>
+  <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+
+  <link href="../../assets/css/vendor/morris.css" rel="stylesheet">
+  <link href="../../assets/css/vendor/bootstrap.css" rel="stylesheet">
+  <link href="../../assets/css/vendor/font-awesome.css" rel="stylesheet">
+  <link href="../../assets/css/vendor/font-awesome-ie7.css" rel="stylesheet">
+  <link href="../../assets/css/vendor/codemirror.css" rel="stylesheet">
+  <link href="../../assets/css/plato.css" rel="stylesheet">
+  <link href="../../assets/css/plato-file.css" rel="stylesheet">
+
+</head>
+
+<body>
+
+<div class="navbar navbar-fixed-top">
+  <div class="container">
+    <a class="navbar-brand" href="http://github.com/jsoverson/plato">Plato on Github</a>
+    <ul class="nav navbar-nav">
+      <li>
+        <a href="../../index.html">Report Home</a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div class="jumbotron">
+  <div class="container">
+    <h1>easing.js</h1>
+  </div>
+</div>
+
+<div class="container aggregate-stats">
+  <div class="row">
+    <div class="col-md-6">
+      <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"></i></a></h2>
+      <p class="stat">76.03</p>
+    </div>
+    <div class="col-md-6">
+      <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC"></i></h2>
+      <p class="stat">299</p>
+    </div>
+  </div>
+  <div class="row historical">
+    <div class="col-md-6">
+      <p id="chart_historical_maint" class="chart"></p>
+    </div>
+    <div class="col-md-6">
+      <p id="chart_historical_sloc" class="chart"></p>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-6">
+      <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty"></i></a></h2>
+      <p class="stat">91.38</p>
+    </div>
+    <div class="col-md-6">
+      <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs"></i></a></h2>
+      <p class="stat">1.48</p>
+    </div>
+  </div>
+</div>
+
+<div class="container charts">
+  <div class="row">
+    <h2 class="header">Function weight</h2>
+  </div>
+  <div class="row">
+    <div class="col-md-6">
+      <h3 class="chart-header">By Complexity <a href="http://en.wikipedia.org/wiki/Cyclomatic_complexity"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="This metric counts the number of distinct paths through a block of code. Lower values are better." data-original-title="Cyclomatic Complexity"></i></a></h3>
+      <div id="fn-by-complexity" class="stat"></div>
+    </div>
+    <div class="col-md-6">
+      <h3 class="chart-header">By SLOC  <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC"></i></h3>
+      <div id="fn-by-sloc" class="stat"></div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="row">
+    <textarea id="file-source" class="col-md-12">/**
+ * Robert Penner&#039;s easing functions. http://gizma.com/easing/
+ * @namespace
+ */
+var Easing = {};
+
+/**
+ * Simple linear tweening - no easing, no acceleration
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.linearTween = function (t, b, c, d) {
+  return c * t / d + b;
+};
+
+/**
+ * Quadratic easing in - accelerating from zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInQuad = function (t, b, c, d) {
+  t /= d;
+  return c * t * t + b;
+};
+
+/**
+ * Quadratic easing out - decelerating to zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeOutQuad = function (t, b, c, d) {
+  t /= d;
+  return -c * t *(t - 2) + b;
+};
+
+/**
+ * Quadratic easing in/out - acceleration until halfway, then deceleration
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInOutQuad = function (t, b, c, d) {
+  t /= d / 2;
+  if (t &lt; 1) return c / 2 * t * t + b;
+  t--;
+  return -c / 2 * (t * (t - 2) - 1) + b;
+};
+
+/**
+ * Cubic easing in - accelerating from zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInCubic = function (t, b, c, d) {
+  t /= d;
+  return c * t * t * t + b;
+};
+
+/**
+ * Cubic easing out - decelerating to zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeOutCubic = function (t, b, c, d) {
+  t /= d;
+  t--;
+  return c* (t * t * t + 1) + b;
+};
+
+/**
+ * Cubic easing in/out - acceleration until halfway, then deceleration
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInOutCubic = function (t, b, c, d) {
+  t /= d / 2;
+  if (t &lt; 1) return c / 2 * t * t * t + b;
+  t -= 2;
+  return c / 2 * (t * t * t + 2) + b;
+};
+
+/**
+ * Quartic easing in - accelerating from zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInQuart = function (t, b, c, d) {
+  t /= d;
+  return c * t * t * t * t + b;
+};
+
+/**
+ * Quartic easing out - decelerating to zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeOutQuart = function (t, b, c, d) {
+  t /= d;
+  t--;
+  return -c * (t * t * t * t - 1) + b;
+};
+
+/**
+ * Quartic easing in/out - acceleration until halfway, then deceleration
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInOutQuart = function (t, b, c, d) {
+  t /= d / 2;
+  if (t &lt; 1) return c / 2 * t * t * t * t + b;
+  t -= 2;
+  return -c / 2 * ( t * t * t * t - 2) + b;
+};
+
+/**
+ * Quintic easing in - accelerating from zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInQuint = function (t, b, c, d) {
+  t /= d;
+  return c * t * t * t * t * t + b;
+};
+
+/**
+ * Quintic easing out - decelerating to zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeOutQuint = function (t, b, c, d) {
+  t /= d;
+  t--;
+  return c * (t * t * t * t * st + 1) + b;
+};
+
+/**
+ * Quintic easing in/out - acceleration until halfway, then deceleration
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInOutQuint = function (t, b, c, d) {
+  t /= d / 2;
+  if (t &lt; 1) return c / 2 * t * t * t * t * t + b;
+  t -= 2;
+  return c / 2 * (t * t * t * t * t + 2) + b;
+};
+
+/**
+ * Sinusoidal easing in - accelerating from zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInSine = function (t, b, c, d) {
+  return -c * Math.cos(t / d * (Math.PI / 2)) + c + b;
+};
+
+/**
+ * Sinusoidal easing out - decelerating to zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeOutSine = function (t, b, c, d) {
+  return c * Math.sin(t / d * (Math.PI / 2)) + b;
+};
+
+/**
+ * Sinusoidal easing in/out - accelerating until halfway, then decelerating
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInOutSine = function (t, b, c, d) {
+  return -c / 2 * (Math.cos(Math.PI * t / d) - 1) + b;
+};
+
+/**
+ * Exponential easing in - accelerating from zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInExpo = function (t, b, c, d) {
+  return c * Math.pow(2, 10 * (t / d - 1) ) + b;
+};
+
+/**
+ * Exponential easing out - decelerating to zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeOutExpo = function (t, b, c, d) {
+  return c * (-Math.pow(2, -10 * t / d ) + 1 ) + b;
+};
+
+/**
+ * Exponential easing in/out - accelerating until halfway, then decelerating
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInOutExpo = function (t, b, c, d) {
+  t /= d / 2;
+  if (t &lt; 1) return c / 2 * Math.pow(2, 10 * (t - 1) ) + b;
+  t--;
+  return c / 2 * (-Math.pow(2, -10 * t) + 2 ) + b;
+};
+
+/**
+ * Circular easing in - accelerating from zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInCirc = function (t, b, c, d) {
+  t /= d;
+  return -c * (Math.sqrt(1 - t * t) - 1) + b;
+};
+
+/**
+ * Circular easing out - decelerating to zero velocity
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeOutCirc = function (t, b, c, d) {
+  t /= d;
+  t--;
+  return c * Math.sqrt(1 - t * t) + b;
+};
+
+/**
+ * Circular easing in/out - acceleration until halfway, then deceleration
+ * @param  {number} t current time
+ * @param  {number} b start value
+ * @param  {number} c change in value
+ * @param  {number} d duration
+ * @return {number} The current easing value.
+ */
+Easing.easeInOutCirc = function (t, b, c, d) {
+  t /= d / 2;
+  if (t &lt; 1) return -c / 2 * (Math.sqrt(1 - t * t) - 1) + b;
+  t -= 2;
+  return c / 2 * (Math.sqrt(1 - t * t) + 1) + b;
+};
+
+module.exports = Easing;</textarea>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p>.</p>
+  </div>
+</footer>
+
+<script type="text/html" id="complexity-popover-template">
+  <div class="complexity-notice">
+    Complexity : {{ complexity.cyclomatic }} <br>
+    Length : {{ complexity.halstead.length }} <br>
+    Difficulty : {{ complexity.halstead.difficulty.toFixed(2) }} <br>
+    Est # bugs : {{ complexity.halstead.bugs.toFixed(2) }}<br>
+  </div>
+</script>
+
+<script type="text/javascript" src="../../assets/scripts/bundles/core-bundle.js"></script>
+<script type="text/javascript" src="../../assets/scripts/bundles/codemirror.js"></script>
+<script type="text/javascript" src="../../assets/scripts/codemirror.markpopovertext.js"></script>
+<script type="text/javascript" src="report.js"></script>
+<script type="text/javascript" src="report.history.js"></script>
+<script type="text/javascript" src="../../assets/scripts/plato-file.js"></script>
+</body>
+</html>

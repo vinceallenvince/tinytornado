@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Index</title>
+    
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+    
+    <h1 class="page-title">Index</h1>
+    
+    
+
+
+    
+
+
+    <h3> </h3>
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+    <section>
+        <article><p><img src="https://travis-ci.org/vinceallenvince/tinytornado.svg?branch=master" alt="Build status"></p>
+<h1>tinytornado</h1>
+<p>TinyTornado renders animated tornadoes in a web browser using JavaScript, CSS and the DOM. It also makes use of both <a href="http://github.com/vinceallenvince/FloraJS">FloraJS</a> and <a href="http://github.com/vinceallenvince/Bit-Shadow-Machine">Bit-Shadow Machine</a>.</p>
+<h2>Install</h2>
+<p>Use the <a href="https://github.com/vinceallenvince/tinytornado/releases/latest">standalone version</a> and reference the css and js files from your document.</p>
+<p>TinyTornado creates two types of tornadoes, funnels and vortices. Use the corresponding css file when creating your tornado. For example, the code below sets up a funnel.</p>
+<pre><code>&lt;html&gt;
+  &lt;head&gt;
+    &lt;link href=&quot;css/funnel.min.css&quot; type=&quot;text/css&quot; charset=&quot;utf-8&quot; rel=&quot;stylesheet&quot; /&gt;
+      &lt;script src=&quot;scripts/tinytornado.min.js&quot; type=&quot;text/javascript&quot; charset=&quot;utf-8&quot;&gt;&lt;/script&gt;
+  &lt;/head&gt;
+  ...</code></pre>
+<p>This code sets up a vortex.</p>
+<pre><code>&lt;html&gt;
+  &lt;head&gt;
+    &lt;link href=&quot;css/vortex.min.css&quot; type=&quot;text/css&quot; charset=&quot;utf-8&quot; rel=&quot;stylesheet&quot; /&gt;
+      &lt;script src=&quot;scripts/tinytornado.min.js&quot; type=&quot;text/javascript&quot; charset=&quot;utf-8&quot;&gt;&lt;/script&gt;
+  &lt;/head&gt;
+  ...</code></pre>
+<p>To include TinyTornado as a component in your project, use the node module.</p>
+<pre><code>npm install tinytornado --save</code></pre>
+<h2>Usage</h2>
+<p>TinyTornado uses four components to create a tornado, a <em>base</em>, <em>debris</em>, <em>spine</em> and <em>shell</em>. Simply create all four and pass them to the tornado's runner to start the animation.</p>
+<p>Notice we're also defining a view for the tornado by passing a &lt;div&gt; to the Runner. The following code creates a funnel.</p>
+<pre><code>...
+&lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id=&quot;worldA&quot;&gt;&lt;/div&gt;
+    &lt;script type=&quot;text/javascript&quot; charset=&quot;utf-8&quot;&gt;
+      var base = new TinyTornado.Funnel.Base();
+      var debris = new TinyTornado.Funnel.Debris();
+      var spine = new TinyTornado.Funnel.Spine();
+      var shell = new TinyTornado.Funnel.Shell();
+
+      var vortex = new TinyTornado.Funnel.Runner(base, debris, spine, shell);
+      vortex.init({
+        el: document.getElementById('worldA')
+      });
+    &lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<p><img src='http://vinceallenvince.github.io/tinytornado/images/funnel.jpg' style='width: 800px;'></p>
+<p>The following code creates a Vortex.</p>
+<pre><code>...
+&lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id=&quot;worldA&quot;&gt;&lt;/div&gt;
+    &lt;script type=&quot;text/javascript&quot; charset=&quot;utf-8&quot;&gt;
+      var base = new TinyTornado.Vortex.Base();
+      var debris = new TinyTornado.Vortex.DebrisBit();
+      var spine = new TinyTornado.Vortex.Spine({
+          density: 10
+      });
+      var shell = new TinyTornado.Vortex.ShellBit();
+
+      var vortex = new TinyTornado.Vortex.RunnerBit(base, debris, spine, shell);
+      vortex.init({
+        el: document.getElementById('worldA')
+      });
+    &lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<p><img src='http://vinceallenvince.github.io/tinytornado/images/vortex.jpg' style='width: 800px;'></p>
+<h2>Audio</h2>
+<p>To create a Tornado's low rumble, use <a href="https://github.com/vinceallenvince/soundbed">SoundBed</a>. Just reference the SoundBed library from your document and initialize the player.</p>
+<pre><code>...
+&lt;script src=&quot;scripts/soundbed.min.js&quot; type=&quot;text/javascript&quot; charset=&quot;utf-8&quot;&gt;&lt;/script&gt;
+&lt;/head&gt;
+  &lt;body&gt;
+    &lt;script type=&quot;text/javascript&quot; charset=&quot;utf-8&quot;&gt;
+      var playerLow = new SoundBed.Player();
+      playerLow.init({
+        perlin: true,
+        reverb: 5,
+        oscAFreq: 60,
+        oscBFreq: 120,
+        oscARate: 0.1,
+        oscBRate: 0.12,
+        freqMin: 60,
+        freqMax: 120,
+        volumeMin: 0.5,
+        volumeMax: 1
+      });
+    &lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<p>Adjust the settings to your liking.</p>
+<h2>Configure</h2>
+<p>Both funnel and vortex components have options you can adjust to configure your tornado.</p>
+<h4>Funnel.Base</h4>
+<ul>
+<li><p><em>width</em> (default = 10)</p>
+<p>The base width. Only useful when the base opacity &gt; 0.</p>
+</li>
+<li><p><em>height</em> (default = 10)</p>
+<p>The base height. Only useful when the base opacity &gt; 0.</p>
+</li>
+<li><p><em>color</em> (default = 0)</p>
+<p>Color. TinyTornadoes are monochromatic. This value is used for red, green and blue.</p>
+</li>
+<li><p><em>perlin</em> (default = true)</p>
+<p>Set to true to distort the base's oscillation via perlin noise.</p>
+</li>
+<li><p><em>perlinSpeed</em></p>
+<p>If perlin = true, sets the speed through the perlin noise space.</p>
+</li>
+<li><p><em>perlinTime</em></p>
+<p>If perlin = true, sets the initial location in the perlin noise space.</p>
+</li>
+<li><p><em>opacity</em> (default = 0)</p>
+<p>The base opacity. Typically you want to leave this at 0 for an invisible base.</p>
+</li>
+</ul>
+<h4>Funnel.Debris</h4>
+<ul>
+<li><p><em>sizeMin</em> (default = 1)</p>
+<p>Minimum particle size.</p>
+</li>
+<li><p><em>sizeMax</em> (default = 3)</p>
+<p>Maximum particle size.</p>
+</li>
+<li><p><em>speedMin</em> (default = 1)</p>
+<p>Minimum particle speed.</p>
+</li>
+<li><p><em>speedMax</em> (default = 20)</p>
+<p>Maximum particle speed.</p>
+</li>
+<li><p><em>opacityMin</em> (default = 0.1)</p>
+<p>Minimum particle opacity.</p>
+</li>
+<li><p><em>opacityMax</em> (default = 0.2)</p>
+<p>Maximum particle opacity.</p>
+</li>
+<li><p><em>lifespanMin</em> (default = 70)</p>
+<p>Minimum particle lifespan.</p>
+</li>
+<li><p><em>lifespanMax</em> (default = 120)</p>
+<p>Maximum particle lifespan.</p>
+</li>
+<li><p><em>colorMin</em> (default = 100)</p>
+<p>Minimum particle color. Debris is monochromatic. This value is used for red, green and blue.</p>
+</li>
+<li><p><em>colorMax</em> (default = 200)</p>
+<p>Maximum particle color. This value is used for red, green and blue.</p>
+</li>
+</ul>
+<h4>Funnel.Spine</h4>
+<ul>
+<li><p><em>density</em> (default = 25)</p>
+<p>Determines number of joints in the spine. Lower values = more joints.</p>
+</li>
+<li><p><em>opacity</em> (default = 0)</p>
+<p>Opacity. Typically set to 0.</p>
+</li>
+<li><p><em>easing</em> (default = 'easeInCirc')</p>
+<p>Determines joint distribution. See src/easing.js for more options.</p>
+</li>
+<li><p><em>offsetFromAxis</em> (default = true)</p>
+<p>Set to false to prevent spine curvature.</p>
+</li>
+</ul>
+<h4>Funnel.Shell</h4>
+<ul>
+<li><p><em>itemWidth</em> (default = 0)</p>
+<p>The element width. Typically set to 0.</p>
+</li>
+<li><p><em>itemHeight</em> (default = 0)</p>
+<p>The element height. Typically set to 0.</p>
+</li>
+<li><p><em>minFunnelWidth</em> (default = 5)</p>
+<p>Minium width of the shell base.</p>
+</li>
+<li><p><em>opacity</em> (default = 0)</p>
+<p>The element opacity. Typically set to 0.</p>
+</li>
+<li><p><em>blur</em> (default = 350)</p>
+<p>Blur. Recommended values bw 300 - 400.</p>
+</li>
+<li><p><em>spread</em> (default = 250)</p>
+<p>Spread. Recommended values bw 200 - 300.</p>
+</li>
+<li><p><em>easing</em> (default = 'easeInExpo')</p>
+<p>Determines shell shape. See src/easing.js for more options.</p>
+</li>
+<li><p><em>colorMin</em> (default = 50)</p>
+<p>Minimum color. Valid values bw 0 - 255. Shell is monochromatic. This value is used for red, green and blue.</p>
+</li>
+<li><p><em>colorMin</em> (default = 255)</p>
+<p>Maximum color. Valid values bw 0 - 255. Shell is monochromatic. This value is used for red, green and blue.</p>
+</li>
+</ul>
+<h2>Docs</h2>
+<p>To learn more, please review <a href="http://vinceallenvince.github.io/tinytornado/doc/">the docs</a>.</p>
+<h2>Building this project</h2>
+<p>This project uses <a href="http://gruntjs.com">Grunt</a>. To build the project first install the node modules.</p>
+<pre><code>npm install</code></pre>
+<p>Next, run grunt.</p>
+<pre><code>grunt</code></pre>
+<p>To run the tests, run 'npm test'.</p>
+<pre><code>npm test</code></pre>
+<p>To check test coverage run 'grunt coverage'.</p>
+<pre><code>grunt coverage</code></pre>
+<p>A pre-commit hook is defined in /pre-commit that runs jshint. To use the hook, run the following:</p>
+<pre><code>ln -s ../../pre-commit .git/hooks/pre-commit</code></pre>
+<p>A post-commit hook is defined in /post-commit that runs the Plato complexity analysis tools. To use the hook, run the following:</p>
+<pre><code>ln -s ../../post-commit .git/hooks/post-commit</code></pre>
+<p>View the <a href="http://vinceallenvince.github.io/tinytornado/reports/">code complexity</a> report.</p></article>
+    </section>
+
+
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="Base.html">Base</a></li><li><a href="Debris.html">Debris</a></li><li><a href="Mask.html">Mask</a></li><li><a href="Runner.html">Runner</a></li><li><a href="Shell.html">Shell</a></li><li><a href="Spine.html">Spine</a></li></ul><h3>Namespaces</h3><ul><li><a href="Easing.html">Easing</a></li></ul>
+</nav>
+
+<br clear="both">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Tue Sep 30 2014 00:04:38 GMT-0000 (UTC)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
